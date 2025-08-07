@@ -1,6 +1,13 @@
+# Imports
 from flask import Flask
 from flask_scss import Scss
 from flask_sqlalchemy import SQLAlchemy
+from enum import Enum
+
+class RoleType(Enum):
+    ADMIN    = 'ADMIN'
+    EMPLOYEE = 'EMPLOYEE'
+    STUDENT  = 'STUDENT'
 
 # App
 app = Flask(__name__)
@@ -9,6 +16,7 @@ Scss(app)
 # Database setup
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///database.db"
 db = SQLAlchemy(app)
+
 
 # Tables
 class Role(db.Model):
@@ -39,6 +47,35 @@ class User(db.Model):
 if __name__ in "__main__":
     with app.app_context():
         db.create_all()
+
+        try:
+            # Checking if the ADMIN role exists
+            admin_role = Role.query.filter_by(name=RoleType.ADMIN.value).first()
+            if not admin_role:
+                admin_role = Role(name=RoleType.ADMIN.value)
+                db.session.add(admin_role)
+                db.session.commit()
+                print("ADMIN role creted")
+            else:
+                print("ADMIN role already exists")
+
+            # Checking if the admin user exists
+            admin_user = User.query.filter_by(username='admin').first()
+            if not admin_user:
+                new_admin = User(
+                    username = 'admin',
+                    password = '1234',
+                    email    = 'admin@gmail.com',
+                    role     = admin_role
+                )
+                db.session.add(new_admin)
+                db.session.commit()
+                print("Default admin user created")
+            else:
+                print("Default admin user already exists")
+
+        except Exception as e:
+            print(f"ERROR: {e}")
 
     app.run(debug=True)
 
