@@ -4,21 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="/static/style.css">
-    <title>Walter White</title>
+    {% block head %} {% endblock head %}
 </head>
 <body>
-    <header>
-        <img src="" alt="Profile Pic">
-        <p>Hello! My name is...</p>
-    </header>
+    {% block header %} {% endblock header %}
 
-    <h1>Save Walter White!</h1>
-    <br>
-    <p>He is a father, a teacher, a mentor</p>
+    {% block body %} {% endblock body %}
 
-    <footer>
-        <p>Call Walter Jr. at: 555-9090-something :))</p>
-    </footer>
-
+    {% block footer %} {% endblock footer %}
 </body>
 </html>

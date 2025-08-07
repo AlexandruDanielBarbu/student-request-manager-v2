@@ -65,7 +65,39 @@ def home():
 @app.route('/dashboard')
 @login_required
 def dashboard():
-    return f"Welcome {current_user.username}!"
+    if current_user.role.name == RoleType.ADMIN.value:
+        return redirect(url_for('admin_dashboard'))
+    elif current_user.role.name == RoleType.EMPLOYEE.value:
+        return redirect(url_for('employee_dashboard'))
+    elif current_user.role.name == RoleType.STUDENT.value:
+        return redirect(url_for('student_dashboard'))
+    else:
+        return 'Unauthorized'
+
+@app.route('/admin-dashboard')
+@login_required
+def admin_dashboard():
+    if current_user.is_authenticated and current_user.role.name == RoleType.ADMIN.value:
+        return render_template('admin_dashboard.html')
+    else:
+        return 'You are not allowed here!'
+
+@app.route('/employee-dashboard')
+@login_required
+def employee_dashboard():
+    if current_user.is_authenticated and current_user.role.name == RoleType.EMPLOYEE.value:
+        return render_template('employee_dashboard.html')
+    else:
+        return 'You are not allowed here!'
+
+@app.route('/student-dashboard')
+@login_required
+def student_dashboard():
+    if current_user.is_authenticated and current_user.role.name == RoleType.STUDENT.value:
+        return render_template('student_dashboard.html')
+    else:
+        return 'You are not allowed here!'
+
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():

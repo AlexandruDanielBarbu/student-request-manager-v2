@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+
+{% block head %}
+    <title>Admin Dashboard</title>
+{% endblock head %}
+
+{% block header %}
+    <header>
+        <img src="" alt="Profile Pic">
+        <p>My name is...</p>
+    </header>
+{% endblock header %}
+
+{% block body %}
+    <form action="">
+        <h1>Add accounts</h1>
+
+        <label for="">Email:</label>
+        <input type="text"><br>
+
+        <label for="">Username:</label>
+        <input type="text"><br>
+
+        <label for="">Password:</label>
+        <input type="text"><br>
+
+        <label for="">Role:</label>
+        <input type="text"><br>
+
+        <input type="submit" name="" id="" value="Add">
+        <input type="submit" value="Load from .csv file and add">
+    </form>
+
+    <form action="">
+        <h1>Delete accounts</h1>
+
+        <label for="">Email:</label>
+        <input type="text"><br>
+
+        <label for="">Username:</label>
+        <input type="text"><br>
+
+        <label for="">Password:</label>
+        <input type="text"><br>
+
+        <label for="">Role:</label>
+        <input type="text"><br>
+
+        <input type="submit" name="" id="" value="Delete">
+        <input type="submit" value="Load from .csv file and delete">
+    </form>
+
+    <table>
+        <tr>
+            <th>Username</th>
+            <th>Email</th>
+            <th>Role</th>
+        </tr>
+
+        <tr>
+            <td>Ana</td>
+            <td>ana@gmail.com</td>
+            <td>Student</td>
+        </tr>
+
+                <tr>
+            <td>Ana</td>
+            <td>ana@gmail.com</td>
+            <td>Employee</td>
+        </tr>
+
+        <tr>
+            <td>Ana</td>
+            <td>ana@gmail.com</td>
+            <td>Admin</td>
+        </tr>
+    </table>
+{% endblock body %}
+
+{% block footer %}
+    <h1>end of app</h1>
+{% endblock footer %}
