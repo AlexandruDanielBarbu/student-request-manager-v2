@@ -1,5 +1,5 @@
 # Imports
-from flask import Flask
+from flask import Flask, render_template
 from flask_scss import Scss
 from flask_sqlalchemy import SQLAlchemy
 from enum import Enum
@@ -16,7 +16,6 @@ Scss(app)
 # Database setup
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///database.db"
 db = SQLAlchemy(app)
-
 
 # Tables
 class Role(db.Model):
@@ -44,6 +43,11 @@ class User(db.Model):
     def check_password(self, password):
         return self.password == password
 
+# Routes
+@app.route("/")
+def home():
+    return render_template('base.html')
+# Driver code
 if __name__ in "__main__":
     with app.app_context():
         db.create_all()
