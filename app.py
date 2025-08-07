@@ -1,8 +1,9 @@
 # Imports
-from flask import Flask, render_template
-from flask_scss import Scss
+from flask            import Flask, render_template, session, redirect, url_for, request
+from flask_scss       import Scss
 from flask_sqlalchemy import SQLAlchemy
-from enum import Enum
+from flask_login      import LoginManager, current_user, login_required, login_user, logout_user, UserMixin
+from enum             import Enum
 
 class RoleType(Enum):
     ADMIN    = 'ADMIN'
@@ -14,8 +15,18 @@ app = Flask(__name__)
 Scss(app)
 
 # Database setup
+app.config['SECRET_KEY'] = 'something'
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///database.db"
 db = SQLAlchemy(app)
+
+login_manager = LoginManager()
+login_manager.init_app(app)
+
+login_manager.login_view = 'login'
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
 
 # Tables
 class Role(db.Model):
@@ -28,7 +39,7 @@ class Role(db.Model):
     def __repr__(self):
         return f"<Role     {self.name}>"
 
-class User(db.Model):
+class User(db.Model, UserMixin):
     __tablename__ = 'users'
 
     id       = db.Column(db.Integer, primary_key=True)
@@ -46,7 +57,37 @@ class User(db.Model):
 # Routes
 @app.route("/")
 def home():
-    return render_template('base.html')
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard'))
+    else:
+        return redirect(url_for('login'))
+
+@app.route('/dashboard')
+@login_required
+def dashboard():
+    return f"Welcome {current_user.username}!"
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+
+        user = User.query.filter_by(username=username).first()
+
+        if user and user.check_password(password):
+            login_user(user)
+            return redirect(url_for('dashboard'))
+        else:
+            return "Invalid credentials"
+
+    return render_template('login.html')
+
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    return redirect(url_for('home'))
 # Driver code
 if __name__ in "__main__":
     with app.app_context():
