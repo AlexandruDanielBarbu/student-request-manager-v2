@@ -1,7 +1,12 @@
 # Imports
-from flask            import Flask, render_template, session, redirect, url_for, request
+import os
+import csv
+
+from io               import StringIO
+from flask            import Flask, render_template, session, redirect, url_for, request, flash
 from flask_scss       import Scss
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy.exc   import IntegrityError
 from flask_login      import LoginManager, current_user, login_required, login_user, logout_user, UserMixin
 from enum             import Enum
 from functools        import wraps
@@ -54,7 +59,7 @@ class Role(db.Model):
     users = db.relationship('User', backref='role', lazy='dynamic')
 
     def __repr__(self):
-        return f"<Role     {self.name}>"
+        return f"<{self.name}>"
 
 class User(db.Model, UserMixin):
     __tablename__ = 'users'
@@ -66,7 +71,7 @@ class User(db.Model, UserMixin):
     role_id  = db.Column(db.Integer, db.ForeignKey('roles.id'))
 
     def __repr__(self):
-        return f"<User     '{self.username}'>"
+        return f"<{self.username}>"
 
     def check_password(self, password):
         return self.password == password
@@ -98,15 +103,14 @@ def admin_dashboard():
     # We have some data from the forms to handle
     if request.method == 'POST':
         if 'add_user' in request.form:
+            # Get data from the form
             email    = request.form.get('email')
             username = request.form.get('username')
             password = request.form.get('password')
             role     = request.form.get('role')
 
-            print(f"{email} {username} {password} {role}")
-            print("PULAAAAAAAAAAAAAAAAAAAAAAAAAAA")
             try:
-                # Checking if the ROLE exists
+                # Checking if ROLE exists
                 generic_role = Role.query.filter_by(name=role).first()
                 if not generic_role:
                     a_role = Role(name=role)
@@ -116,7 +120,7 @@ def admin_dashboard():
                 else:
                     print(f"{role} already exists")
 
-                # Checking if the user exists
+                # Checking if the user exists already
                 role_obj = Role.query.filter_by(name=role).first()
                 user = User.query.filter_by(username=username).first()
                 if not user:
@@ -129,18 +133,138 @@ def admin_dashboard():
                     db.session.add(new_user)
                     db.session.commit()
                     print("User created")
+                    return redirect(url_for('admin_dashboard'))
+
                 else:
                     print("User already exists")
-
-                all_users = User.query.all()
-
-                for user in all_users:
-                    print(user)
+                    return redirect(url_for('admin_dashboard'))
 
             except Exception as e:
                 db.session.rollback()
                 print(f"ERROR: {e}")
+                return redirect(url_for('admin_dashboard'))
 
+        if 'delete_user' in request.form:
+                username = request.form.get('username')
+
+                try:
+                    user_to_delete = User.query.filter_by(username=username).first()
+
+                    # Self deletion check
+                    if username == current_user.username:
+                        flash("You cannot delete yourself!", 'error')
+                        return redirect(url_for('admin_dashboard'))
+
+                    # Non existent user deletion check
+                    if user_to_delete:
+                        db.session.delete(user_to_delete)
+                        db.session.commit()
+                        return redirect(url_for('admin_dashboard'))
+                    else:
+                        print("This user does not exist therefore it cannot be deleted!")
+                        return redirect(url_for('admin_dashboard'))
+
+                except Exception as e:
+                    db.session.rollback()
+                    print(f"ERROR: {e}")
+
+        if 'csv_add_user' in request.form:
+            try:
+                csv_file = request.files.get('csv_file')
+
+                # Test .csv file conditions
+                if not csv_file or not csv_file.filename.endswith('.csv'):
+                    flash('Please upload a valid CSV file for user creation.', 'error')
+                    return redirect(url_for('admin_dashboard'))
+                else:
+                    # Work the .csv magic
+                    csv_text = StringIO(csv_file.stream.read().decode('utf-8'))
+                    csv_reader = csv.DictReader(csv_text, delimiter=',')
+                    created_count = 0
+
+                    for row in csv_reader:
+                        # Extract data from the CSV row
+                        username = row.get('username')
+                        email = row.get('email')
+                        password = row.get('password')
+                        role_name = row.get('role')
+
+                        # Skip if any essential data is missing
+                        if not all([username, email, password, role_name]):
+                            print(f"Skipping row with missing data: {row}")
+                            continue
+
+                        # Check if a user with this username or email already exists
+                        existing_user = User.query.filter((User.username == username) | (User.email == email)).first()
+                        if existing_user:
+                            print(f"User with username '{username}' or email '{email}' already exists. Skipping.")
+                            continue
+
+                        # Find or create the role
+                        role_obj = Role.query.filter_by(name=role_name).first()
+                        if not role_obj:
+                            role_obj = Role(name=role_name)
+                            db.session.add(role_obj)
+                            db.session.commit()
+
+                        # Create and save the new user
+                        new_user = User(
+                            username=username,
+                            email=email,
+                            password=password,
+                            role=role_obj
+                        )
+
+                        db.session.add(new_user)
+                        created_count += 1
+
+                    db.session.commit()
+                    flash(f'{created_count} users were successfully created from the CSV.', 'success')
+                    return redirect(url_for('admin_dashboard'))
+
+            except Exception as e:
+                db.session.rollback()
+                flash(f'An error occurred during bulk user creation: {e}', 'error')
+                return redirect(url_for('admin_dashboard'))
+
+        if 'csv_delete_user' in  request.form:
+            try:
+                csv_file = request.files.get('csv_file')
+
+                # Test .csv file conditions
+                if not csv_file or not csv_file.filename.endswith('.csv'):
+                    flash('Please upload a valid CSV file for user creation.', 'error')
+                    return redirect(url_for('admin_dashboard'))
+                else:
+                    # Work the .csv magic
+                    csv_text = StringIO(csv_file.stream.read().decode('utf-8'))
+                    csv_reader = csv.DictReader(csv_text, delimiter=',')
+                    deleted_count = 0
+
+                    for row in csv_reader:
+                        # Extract data from the CSV row
+                        username = row.get('username')
+
+                        # Check if a user with this username or email already exists
+                        existing_user = User.query.filter((User.username == username)).first()
+                        if not existing_user:
+                            print(f"No such user to delete!")
+                            continue
+
+                        # Delete the user
+                        db.session.delete(existing_user)
+                        deleted_count += 1
+
+                    db.session.commit()
+                    flash(f'{deleted_count} users were successfully deleted from the CSV.', 'success')
+                    return redirect(url_for('admin_dashboard'))
+
+            except Exception as e:
+                db.session.rollback()
+                flash(f'An error occurred during bulk user deletion: {e}', 'error')
+                return redirect(url_for('admin_dashboard'))
+
+    # Render all users in a table
     all_users = User.query.all()
     return render_template('admin_dashboard.html', users=all_users)
 

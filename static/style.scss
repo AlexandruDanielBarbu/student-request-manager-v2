@@ -1,25 +1,101 @@
+// Variables
+$good_btn_color: rgba(186, 247, 186, 0.833);
+$bad_btn_color: rgba(247, 186, 186, 0.833);
+
+$font_type: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;;
+
 body {
     background-color: wheat;
 }
 
-form {
+.card {
+    font-family: $font_type;
+
     background-color: white;
-    padding: 10px;
-    border: solid 0px;
-    border-radius: 10px;
+
     margin: 10px;
 
+    padding: 10px;
+
+    border: solid 0px;
+    border-radius: 10px;
+
     label {
-        margin-bottom: 10px;
-        margin-right: 10px;
+        margin: 10px;
     }
 
-    input {
+    h1 {
+        margin: 10px;
+    }
+
+    input, select {
+        font-family: $font_type;
+
         margin-bottom: 10px;
-        border: solid 1px black;
-        border-radius: 20px;
+
         padding: 5px;
         padding-left: 10px;
         padding-right: 10px;
+
+        border: solid 1px black;
+        border-radius: 20px;
     }
+}
+
+.good_btn {
+    font-family: $font_type;
+    font-weight: bold;
+
+    background-color: $good_btn_color;
+
+    margin: 10px;
+
+    padding: 5px;
+    padding-left: 10px;
+    padding-right: 10px;
+
+    border: solid 1px $good_btn_color;
+    border-radius: 20px;
+}
+
+.bad_btn {
+    font-family: $font_type;
+    font-weight: bold;
+
+    background-color: $bad_btn_color;
+
+    margin: 10px;
+
+    padding: 5px;
+    padding-left: 10px;
+    padding-right: 10px;
+
+    border: solid 1px $bad_btn_color;
+    border-radius: 20px;
+}
+
+header {
+    font-family: $font_type;
+
+    background-color: white;
+
+    margin: 10px;
+
+    padding: 10px;
+
+    border: solid 0px;
+    border-radius: 10px;
+}
+
+footer {
+    font-family: $font_type;
+
+    background-color: white;
+
+    margin: 10px;
+
+    padding: 10px;
+
+    border: solid 0px;
+    border-radius: 10px;
 }

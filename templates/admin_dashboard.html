@@ -12,62 +12,82 @@
 {% endblock header %}
 
 {% block body %}
-    <form action="/admin-dashboard" method="POST">
-        <h1>Add accounts</h1>
+    <div class="card">
+        <h1>Add User</h1>
+        <form action="/admin-dashboard" method="POST">
 
-        <label for="email">Email:</label>
-        <input type="text" name="email" id="email"><br>
+            <label for="email">Email:</label>
+            <input type="text" name="email" id="email"><br>
 
-        <label for="username">Username:</label>
-        <input type="text" name="username" id="username"><br>
+            <label for="username">Username:</label>
+            <input type="text" name="username" id="username"><br>
 
-        <label for="password">Password:</label>
-        <input type="password" name="password" id="password"><br>
+            <label for="password">Password:</label>
+            <input type="password" name="password" id="password"><br>
 
-        <label for="role">Role:</label>
-        <select id="role" name="role">
-            <option value="ADMIN">Admin</option>
-            <option value="EMPLOYEE">Employee</option>
-            <option value="STUDENT">Student</option>
-        </select><br>
+            <label for="role">Role:</label>
+            <select id="role" name="role">
+                <option value="ADMIN">Admin</option>
+                <option value="EMPLOYEE">Employee</option>
+                <option value="STUDENT">Student</option>
+            </select><br>
 
-        <input type="submit" name="add_user" id="" value="Add">
-        <!-- <input type="submit" value="Load from .csv file and add"> -->
-    </form>
+            <input class="good_btn" type="submit" name="add_user" id="" value="Add">
 
-    <form action="/admin-dashboard" method="POST">
-        <h1>Delete accounts</h1>
+        </form>
 
-        <label for="username">Username:</label>
-        <input type="text" name="username" id="username"><br>
+        <h1>Add Users from a .csv file</h1>
+        <form action="/admin-dashboard" enctype="multipart/form-data" method="POST">
+            <input type="file" name="csv_file" id="">
+            <input class="good_btn" type="submit" name="csv_add_user" id="" value="Add users">
+        </form>
+    </div>
 
-        <input type="submit" name="delete_user" id="" value="Delete">
-        <!-- <input type="submit" value="Load from .csv file and add"> -->
-    </form>
+    <div class="card">
+        <form action="/admin-dashboard" method="POST">
+            <h1>Delete User</h1>
 
-    <table>
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Username</th>
-                <th>Email</th>
-                <th>Role</th>
-            </tr>
-        </thead>
+            <label for="username">Username:</label>
+            <input type="text" name="username" id="username"><br>
 
-        <tbody>
-            {% for user in users %}
+            <input class="bad_btn" type="submit" name="delete_user" id="" value="Delete">
+        </form>
+
+        <h1>Delete Users from a .csv file</h1>
+        <form action="/admin-dashboard" enctype="multipart/form-data" method="POST">
+            <input type="file" name="csv_file" id="">
+            <input class="bad_btn" type="submit" name="csv_delete_user" id="" value="Delete users">
+        </form>
+    </div>
+
+    <div class="card">
+        <h1>List of all Users</h1>
+        <table>
+            <thead>
                 <tr>
-                    <td>{{ user.id }}</td>
-                    <td>{{ user.username }}</td>
-                    <td>{{ user.email }}</td>
-                    <td>{{ user.role }}</td>
+                    <th>ID</th>
+                    <th>Username</th>
+                    <th>Email</th>
+                    <th>Role</th>
                 </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+            </thead>
+
+            <tbody>
+                {% for user in users %}
+                    <tr>
+                        <td>{{ user.id }}</td>
+                        <td>{{ user.username }}</td>
+                        <td>{{ user.email }}</td>
+                        <td>{{ user.role }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 {% endblock body %}
 
 {% block footer %}
-    <h1>end of app</h1>
+    <footer>
+        <p>end of app</p>
+    </footer>
 {% endblock footer %}
