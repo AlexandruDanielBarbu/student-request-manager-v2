@@ -245,6 +245,11 @@ def admin_dashboard():
                         # Extract data from the CSV row
                         username = row.get('username')
 
+                        # Self deletion check
+                        if username == current_user.username:
+                            flash("You cannot delete yourself!", 'error')
+                            continue
+
                         # Check if a user with this username or email already exists
                         existing_user = User.query.filter((User.username == username)).first()
                         if not existing_user:
