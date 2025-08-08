@@ -32,6 +32,21 @@ def admin_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
+def student_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        # If not logged in, redirect to login page
+        if not current_user.is_authenticated:
+            return redirect(url_for('login'))
+
+        # If not admin then deny
+        if current_user.role.name != RoleType.STUDENT.value:
+            return 'You are not allowed here!', 403
+
+        # All is good
+        return f(*args, **kwargs)
+    return decorated_function
+
 # App
 app = Flask(__name__)
 Scss(app)
@@ -269,9 +284,11 @@ def admin_dashboard():
                 flash(f'An error occurred during bulk user deletion: {e}', 'error')
                 return redirect(url_for('admin_dashboard'))
 
+        if 'logout' in request.form:
+            return redirect(url_for('logout'))
     # Render all users in a table
     all_users = User.query.all()
-    return render_template('admin_dashboard.html', users=all_users)
+    return render_template('admin_dashboard.html', users=all_users, now_user=current_user)
 
 @app.route('/employee-dashboard')
 @login_required
@@ -283,11 +300,9 @@ def employee_dashboard():
 
 @app.route('/student-dashboard')
 @login_required
+@student_required
 def student_dashboard():
-    if current_user.is_authenticated and current_user.role.name == RoleType.STUDENT.value:
-        return render_template('student_dashboard.html')
-    else:
-        return 'You are not allowed here!'
+    return render_template('student_dashboard.html', now_user=current_user)
 
 
 @app.route('/login', methods=['GET', 'POST'])

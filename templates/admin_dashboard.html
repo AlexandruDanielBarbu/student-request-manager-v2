@@ -7,11 +7,12 @@
 {% block header %}
     <header>
         <img src="" alt="Profile Pic">
-        <p>My name is...</p>
+        <button class="admin_username">{{ now_user.username }}</button>
     </header>
 {% endblock header %}
 
 {% block body %}
+    <!-- Add User -->
     <div class="card">
         <h1>Add User</h1>
         <form action="/admin-dashboard" method="POST">
@@ -43,6 +44,7 @@
         </form>
     </div>
 
+    <!-- Delete User -->
     <div class="card">
         <form action="/admin-dashboard" method="POST">
             <h1>Delete User</h1>
@@ -60,6 +62,7 @@
         </form>
     </div>
 
+    <!-- Lst Users -->
     <div class="card">
         <h1>List of all Users</h1>
         <table>
@@ -84,6 +87,11 @@
             </tbody>
         </table>
     </div>
+
+    <!-- Logout btn -->
+     <form action="" method="post">
+        <input class="bad_btn" type="submit" name="logout" id="logout" value="Logout">
+     </form>
 {% endblock body %}
 
 {% block footer %}

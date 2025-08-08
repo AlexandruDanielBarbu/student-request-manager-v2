@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+
+{% block head %}
+    <title>Student Dashboard</title>
+{% endblock head %}
+
+{% block header %}
+    <header>
+        <img src="" alt="Profile Pic">
+        <button class="student_username">{{ now_user.username }}</button>
+    </header>
+{% endblock header %}
+
+{% block body %}
+    <!-- News -->
+    <div class="card">
+        <h1>News</h1>
+        <p>Ceva legat de login</p>
+        <p>ceva legat de camine...</p>
+    </div>
+
+    <!-- About me -->
+    <div class="card">
+        <h1>About me</h1>
+        <p>An universitar</p>
+        <p>Ciclu de studii</p>
+        <p>Facultate</p>
+        <p>Domeniu</p>
+        <p>Program Studiu</p>
+    </div>
+
+    <!-- Pune o intrebare -->
+    <div class="card">
+        <h1>Pune o intrebare</h1>
+        <form action="/student-dashboard" method="POST">
+            <label for="question">Question:</label>
+            <input type="text" name="question" id="question"><br>
+
+            <input class="good_btn" type="submit" name="submit_question" id="" value="Submit">
+        </form>
+    </div>
+
+    <!-- Cere un document -->
+    <div class="card">
+        <h1>Cere un document</h1>
+
+        <form action="">
+            <label for="type">Tip:</label>
+            <select id="type" name="type">
+                <option value="ADMIN">Foaie Matricola</option>
+                <option value="EMPLOYEE">Situatie Scolara</option>
+                <option value="STUDENT">Adeverinta Student</option>
+            </select><br>
+
+            <input class="good_btn" type="submit" name="add_user" id="" value="Get">
+        </form>
+    </div>
+
+    <div class="card">
+        <h1>Request List</h1>
+                <table>
+            <thead>
+                <tr>
+                    <th>Type</th>
+                    <th>To</th>
+                    <th>Sent date</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                    <tr>
+                        <td>Foaie Matricola</td>
+                        <td>Walter White</td>
+                        <td>20 - Ian - 2008</td>
+                        <td>Solved</td>
+                    </tr>
+            </tbody>
+        </table>
+
+    </div>
+    <!-- Logout btn -->
+     <form action="" method="post">
+        <input class="bad_btn" type="submit" name="logout" id="logout" value="Logout">
+     </form>
+{% endblock body %}
+
+{% block footer %}
+    <footer>
+        <p>end of app</p>
+    </footer>
+{% endblock footer %}

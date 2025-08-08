@@ -5,13 +5,15 @@
 {% endblock head %}
 
 {% block body %}
-    <form action="" method="POST">
-        <label for="username">Username:</label>
-        <input type="text" id="username" name="username"><br>
+    <div class="card">
+        <form action="" method="POST">
+            <label for="username">Username:</label>
+            <input type="text" id="username" name="username"><br>
 
-        <label for="password">Password:</label>
-        <input type="password" id="password" name="password" id=""><br><br>
+            <label for="password">Password:</label>
+            <input type="password" id="password" name="password" id=""><br><br>
 
-        <input type="submit" value="Login">
-    </form>
+            <input class="good_btn" type="submit" value="Login">
+        </form>
+    </div>
 {% endblock body %}
