@@ -4,11 +4,28 @@ from flask_scss       import Scss
 from flask_sqlalchemy import SQLAlchemy
 from flask_login      import LoginManager, current_user, login_required, login_user, logout_user, UserMixin
 from enum             import Enum
+from functools        import wraps
 
 class RoleType(Enum):
     ADMIN    = 'ADMIN'
     EMPLOYEE = 'EMPLOYEE'
     STUDENT  = 'STUDENT'
+
+# Custom decorators
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        # If not logged in, redirect to login page
+        if not current_user.is_authenticated:
+            return redirect(url_for('login'))
+
+        # If not admin then deny
+        if current_user.role.name != RoleType.ADMIN.value:
+            return 'You are not allowed here!', 403
+
+        # All is good
+        return f(*args, **kwargs)
+    return decorated_function
 
 # App
 app = Flask(__name__)
@@ -74,13 +91,58 @@ def dashboard():
     else:
         return 'Unauthorized'
 
-@app.route('/admin-dashboard')
+@app.route('/admin-dashboard', methods=['GET', 'POST'])
 @login_required
+@admin_required
 def admin_dashboard():
-    if current_user.is_authenticated and current_user.role.name == RoleType.ADMIN.value:
-        return render_template('admin_dashboard.html')
-    else:
-        return 'You are not allowed here!'
+    # We have some data from the forms to handle
+    if request.method == 'POST':
+        if 'add_user' in request.form:
+            email    = request.form.get('email')
+            username = request.form.get('username')
+            password = request.form.get('password')
+            role     = request.form.get('role')
+
+            print(f"{email} {username} {password} {role}")
+            print("PULAAAAAAAAAAAAAAAAAAAAAAAAAAA")
+            try:
+                # Checking if the ROLE exists
+                generic_role = Role.query.filter_by(name=role).first()
+                if not generic_role:
+                    a_role = Role(name=role)
+                    db.session.add(a_role)
+                    db.session.commit()
+                    print(f"{a_role} was creted")
+                else:
+                    print(f"{role} already exists")
+
+                # Checking if the user exists
+                role_obj = Role.query.filter_by(name=role).first()
+                user = User.query.filter_by(username=username).first()
+                if not user:
+                    new_user = User(
+                        username = username,
+                        password = password,
+                        email    = email,
+                        role     = role_obj
+                    )
+                    db.session.add(new_user)
+                    db.session.commit()
+                    print("User created")
+                else:
+                    print("User already exists")
+
+                all_users = User.query.all()
+
+                for user in all_users:
+                    print(user)
+
+            except Exception as e:
+                db.session.rollback()
+                print(f"ERROR: {e}")
+
+    all_users = User.query.all()
+    return render_template('admin_dashboard.html', users=all_users)
 
 @app.route('/employee-dashboard')
 @login_required

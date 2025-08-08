@@ -12,68 +12,59 @@
 {% endblock header %}
 
 {% block body %}
-    <form action="">
+    <form action="/admin-dashboard" method="POST">
         <h1>Add accounts</h1>
 
-        <label for="">Email:</label>
-        <input type="text"><br>
+        <label for="email">Email:</label>
+        <input type="text" name="email" id="email"><br>
 
-        <label for="">Username:</label>
-        <input type="text"><br>
+        <label for="username">Username:</label>
+        <input type="text" name="username" id="username"><br>
 
-        <label for="">Password:</label>
-        <input type="text"><br>
+        <label for="password">Password:</label>
+        <input type="password" name="password" id="password"><br>
 
-        <label for="">Role:</label>
-        <input type="text"><br>
+        <label for="role">Role:</label>
+        <select id="role" name="role">
+            <option value="ADMIN">Admin</option>
+            <option value="EMPLOYEE">Employee</option>
+            <option value="STUDENT">Student</option>
+        </select><br>
 
-        <input type="submit" name="" id="" value="Add">
-        <input type="submit" value="Load from .csv file and add">
+        <input type="submit" name="add_user" id="" value="Add">
+        <!-- <input type="submit" value="Load from .csv file and add"> -->
     </form>
 
-    <form action="">
+    <form action="/admin-dashboard" method="POST">
         <h1>Delete accounts</h1>
 
-        <label for="">Email:</label>
-        <input type="text"><br>
+        <label for="username">Username:</label>
+        <input type="text" name="username" id="username"><br>
 
-        <label for="">Username:</label>
-        <input type="text"><br>
-
-        <label for="">Password:</label>
-        <input type="text"><br>
-
-        <label for="">Role:</label>
-        <input type="text"><br>
-
-        <input type="submit" name="" id="" value="Delete">
-        <input type="submit" value="Load from .csv file and delete">
+        <input type="submit" name="delete_user" id="" value="Delete">
+        <!-- <input type="submit" value="Load from .csv file and add"> -->
     </form>
 
     <table>
-        <tr>
-            <th>Username</th>
-            <th>Email</th>
-            <th>Role</th>
-        </tr>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Username</th>
+                <th>Email</th>
+                <th>Role</th>
+            </tr>
+        </thead>
 
-        <tr>
-            <td>Ana</td>
-            <td>ana@gmail.com</td>
-            <td>Student</td>
-        </tr>
-
+        <tbody>
+            {% for user in users %}
                 <tr>
-            <td>Ana</td>
-            <td>ana@gmail.com</td>
-            <td>Employee</td>
-        </tr>
-
-        <tr>
-            <td>Ana</td>
-            <td>ana@gmail.com</td>
-            <td>Admin</td>
-        </tr>
+                    <td>{{ user.id }}</td>
+                    <td>{{ user.username }}</td>
+                    <td>{{ user.email }}</td>
+                    <td>{{ user.role }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
     </table>
 {% endblock body %}
 
