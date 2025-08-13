@@ -1,14 +1,12 @@
 {% extends 'base.html' %}
 
-{% block head %}
-    <title>Student Dashboard</title>
-{% endblock head %}
+{% block page_title %} Student Dashboard {% endblock page_title %}
+
+{% block body_class %} class="student_body" {% endblock body_class %}
 
 {% block header %}
-    <header>
-        <img src="" alt="Profile Pic">
-        <button class="student_username">{{ now_user.username }}</button>
-    </header>
+    <img src="" alt="Profile Pic">
+    <button class="student_username">{{ now_user.username }}</button>
 {% endblock header %}
 
 {% block body %}
@@ -86,7 +84,5 @@
 {% endblock body %}
 
 {% block footer %}
-    <footer>
         <p>end of app</p>
-    </footer>
 {% endblock footer %}

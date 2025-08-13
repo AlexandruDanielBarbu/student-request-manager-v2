@@ -8,6 +8,14 @@ $bad_btn_color: rgba(247, 186, 186, 0.833);
 
 $font_type: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;;
 
+.admin_body {
+    background-color: $admin_body_color;
+}
+
+.student_body {
+    background-color: $student_body_color;
+}
+
 body {
     background-color: wheat;
 }

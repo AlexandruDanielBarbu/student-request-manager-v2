@@ -1,3 +1,11 @@
+.admin_body {
+  background-color: wheat;
+}
+
+.student_body {
+  background-color: rgba(186, 247, 186, 0.833);
+}
+
 body {
   background-color: wheat;
 }
