@@ -58,11 +58,9 @@ body {
     }
 }
 
-.good_btn {
+.base_btn {
     font-family: $font_type;
     font-weight: bold;
-
-    background-color: $good_btn_color;
 
     margin: 10px;
 
@@ -70,24 +68,20 @@ body {
     padding-left: 10px;
     padding-right: 10px;
 
-    border: solid 1px $good_btn_color;
+    border: solid 1px;
     border-radius: 20px;
 }
 
+.good_btn {
+    @extend .base_btn;
+    background-color: $good_btn_color;
+    border-color:$good_btn_color;
+}
+
 .bad_btn {
-    font-family: $font_type;
-    font-weight: bold;
-
+    @extend .base_btn;
     background-color: $bad_btn_color;
-
-    margin: 10px;
-
-    padding: 5px;
-    padding-left: 10px;
-    padding-right: 10px;
-
-    border: solid 1px $bad_btn_color;
-    border-radius: 20px;
+    border-color: $bad_btn_color;
 }
 
 header {
@@ -117,43 +111,37 @@ footer {
 }
 
 .admin_username {
-    font-family: $font_type;
-    font-weight: bold;
-
+    @extend .base_btn;
     background-color: $admin_body_color;
-
-    margin: 10px;
-
-    padding: 10px;
-
     border: solid 0px;
-    border-radius: 20px;
 }
 
 .student_username {
-    font-family: $font_type;
-    font-weight: bold;
-
+    @extend .base_btn;
     background-color: $student_body_color;
-
-    margin: 10px;
-
-    padding: 10px;
-
     border: solid 0px;
-    border-radius: 20px;
 }
 
 .employee_username {
-    font-family: $font_type;
-    font-weight: bold;
-
+    @extend .base_btn;
     background-color: $employee_body_color;
-
-    margin: 10px;
-
-    padding: 10px;
-
     border: solid 0px;
-    border-radius: 20px;
+}
+
+hr {
+    border: solid 1px;
+    border-radius: 10px;
+    margin: 10px;
+}
+
+.employee_hr {
+    border-color: $employee_body_color;
+}
+
+.admin_hr {
+    border-color: $admin_body_color;
+}
+
+.student_hr {
+    border-color: $student_body_color;
 }
