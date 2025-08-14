@@ -6,6 +6,7 @@ from io               import StringIO
 from flask            import Flask, render_template, session, redirect, url_for, request, flash
 from flask_scss       import Scss
 from flask_sqlalchemy import SQLAlchemy
+from flask_migrate    import Migrate
 from sqlalchemy.exc   import IntegrityError
 from flask_login      import LoginManager, current_user, login_required, login_user, logout_user, UserMixin
 from enum             import Enum
@@ -39,8 +40,23 @@ def student_required(f):
         if not current_user.is_authenticated:
             return redirect(url_for('login'))
 
-        # If not admin then deny
+        # If not student then deny
         if current_user.role.name != RoleType.STUDENT.value:
+            return 'You are not allowed here!', 403
+
+        # All is good
+        return f(*args, **kwargs)
+    return decorated_function
+
+def employee_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        # If not logged in, redirect to login page
+        if not current_user.is_authenticated:
+            return redirect(url_for('login'))
+
+        # If not employee then deny
+        if current_user.role.name != RoleType.EMPLOYEE.value:
             return 'You are not allowed here!', 403
 
         # All is good
@@ -55,6 +71,8 @@ Scss(app)
 app.config['SECRET_KEY'] = 'something'
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///database.db"
 db = SQLAlchemy(app)
+
+migrate = Migrate(app, db)
 
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -83,13 +101,31 @@ class User(db.Model, UserMixin):
     username = db.Column(db.String(100), unique=True, nullable=False)
     password = db.Column(db.String(128), nullable=False)
     email    = db.Column(db.String(120), unique=True, nullable=False)
-    role_id  = db.Column(db.Integer, db.ForeignKey('roles.id'))
+
+    role_id      = db.Column(db.Integer, db.ForeignKey('roles.id'))
+    student_info = db.relationship('Student', foreign_keys='Student.user_id', backref='user', uselist=False)
+    students_under_care = db.relationship('Student', foreign_keys='Student.responsible_employee_id', backref='responsible_employee', lazy='dynamic')
 
     def __repr__(self):
         return f"<{self.username}>"
 
     def check_password(self, password):
         return self.password == password
+
+class Student(db.Model):
+    __tablename__ = 'students'
+
+    id              = db.Column(db.Integer, primary_key=True)
+    faculty         = db.Column(db.String(100), nullable=True)
+    domain          = db.Column(db.String(100), nullable=True)
+    start_year      = db.Column(db.Integer, nullable=True)
+    graduation_year = db.Column(db.Integer, nullable=True)
+
+    user_id         = db.Column(db.Integer, db.ForeignKey('users.id', name='fk_user_id'), unique=True, nullable=False)
+    responsible_employee_id = db.Column(db.Integer, db.ForeignKey('users.id', name='fk_students_responsible_employee'), nullable=True)
+
+    def __repr__(self):
+        return f"<Student info for {self.user.username}>"
 
 # Routes
 @app.route("/")
@@ -286,17 +322,135 @@ def admin_dashboard():
 
         if 'logout' in request.form:
             return redirect(url_for('logout'))
+
+        if 'join_students' in request.form:
+            # Get form data
+            student_name = request.form.get('student_username')
+            employee_name = request.form.get('employee_username')
+
+            try:
+                # Find the users
+                student_user  = User.query.filter_by(username=student_name).first()
+                employee_user = User.query.filter_by(username=employee_name).first()
+
+                # Get the roles
+                student_role = Role.query.filter_by(name='STUDENT').first()
+                employee_role = Role.query.filter_by(name='EMPLOYEE').first()
+
+                # Verify users
+                if not student_user or student_user.role != student_role:
+                    flash(f'Error: User "{student_name}" not found or is not a student.', 'error')
+                    return redirect(url_for('admin_dashboard'))
+
+                if not employee_user or employee_user.role != employee_role:
+                    flash(f'Error: User "{employee_name}" not found or is not an employee.', 'error')
+                    return redirect(url_for('admin_dashboard'))
+
+                # Get student specific data
+                student_data = Student.query.filter_by(user=student_user).first()
+
+                if not student_data:
+                    student_data = Student(user=student_user)
+                    db.session.add(student_data)
+
+                student_data.responsible_employee = employee_user
+
+                db.session.commit()
+                print(f"Added {student_name} to {employee_name}!")
+
+            except Exception as e:
+                db.session.rollback()
+                print(f"ERROR: {e}")
+                return redirect(url_for('admin_dashboard'))
+
+        if 'csv_join_students' in request.form:
+            try:
+                csv_file = request.files.get('csv_file')
+
+                # Test .csv file conditions
+                if not csv_file or not csv_file.filename.endswith('.csv'):
+                    flash('Please upload a valid CSV file for user creation.', 'error')
+                    return redirect(url_for('admin_dashboard'))
+                else:
+                    # Work the .csv magic
+                    csv_text = StringIO(csv_file.stream.read().decode('utf-8'))
+                    csv_reader = csv.DictReader(csv_text, delimiter=',')
+                    succes_count = 0
+
+                    for row in csv_reader:
+                        # Extract data from the CSV row
+                        student_username = row.get('student_username')
+                        employee_username = row.get('employee_username')
+
+                        # Skip if any essential data is missing
+                        if not all([student_username, employee_username]):
+                            print(f"Skipping row with missing data: {row}")
+                            continue
+
+                        # Find the users
+                        student_user = User.query.filter((User.username == student_username)).first()
+                        employee_user = User.query.filter((User.username == employee_username)).first()
+
+                        # Check if a user with this username exists
+                        if not student_user or not employee_user:
+                            print(f"'{student_username}' or '{employee_username}' does not exist. Skipping.")
+                            continue
+
+                        # Asign the student to the employee
+                        try:
+                            # Get the roles
+                            student_role = Role.query.filter_by(name='STUDENT').first()
+                            employee_role = Role.query.filter_by(name='EMPLOYEE').first()
+
+                            # Verify users
+                            if not student_user or student_user.role != student_role:
+                                flash(f'Error: User "{student_name}" not found or is not a student.', 'error')
+                                return redirect(url_for('admin_dashboard'))
+
+                            if not employee_user or employee_user.role != employee_role:
+                                flash(f'Error: User "{employee_name}" not found or is not an employee.', 'error')
+                                return redirect(url_for('admin_dashboard'))
+
+                            # Get student specific data
+                            student_data = Student.query.filter_by(user=student_user).first()
+
+                            if not student_data:
+                                student_data = Student(user=student_user)
+                                db.session.add(student_data)
+
+                            student_data.responsible_employee = employee_user
+                            print(f"Added {student_name} to {employee_name}!")
+
+                            succes_count += 1
+
+                        except Exception as e:
+                            db.session.rollback()
+                            print(f"ERROR: {e}")
+                            return redirect(url_for('admin_dashboard'))
+
+                    db.session.commit()
+                    flash(f'{succes_count} students were successfully asigned from the CSV.', 'success')
+                    return redirect(url_for('admin_dashboard'))
+
+            except Exception as e:
+                db.session.rollback()
+                flash(f'An error occurred during bulk user creation: {e}', 'error')
+                return redirect(url_for('admin_dashboard'))
+
+
     # Render all users in a table
     all_users = User.query.all()
     return render_template('admin_dashboard.html', users=all_users, now_user=current_user)
 
 @app.route('/employee-dashboard')
 @login_required
+@employee_required
 def employee_dashboard():
-    if current_user.is_authenticated and current_user.role.name == RoleType.EMPLOYEE.value:
-        return render_template('employee_dashboard.html')
-    else:
-        return 'You are not allowed here!'
+
+    employee = User.query.filter_by(username=current_user.username).first()
+    all_students = employee.students_under_care.all()
+
+    return render_template('employee_dashboard.html', now_user=current_user, students=all_students)
 
 @app.route('/student-dashboard')
 @login_required

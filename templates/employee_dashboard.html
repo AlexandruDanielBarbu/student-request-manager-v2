@@ -1,0 +1,112 @@
+{% extends 'base.html' %}
+
+{% block page_title %} Employee Dashboard {% endblock page_title %}
+
+{% block body_class %} class="employee_body" {% endblock body_class %}
+
+{% block header %}
+    <img src="" alt="Profile Pic">
+    <button class="employee_username">{{ now_user.username }}</button>
+{% endblock header %}
+
+{% block body %}
+    <!-- News -->
+    <div class="card">
+        <h1>Post an Announcement</h1>
+        <form action="">
+            <input type="text">
+        </form>
+    </div>
+
+    <!-- Update Student Info -->
+    <div class="card">
+        <h1>Update Student Info</h1>
+        <form action="">
+            <label for="">Username:</label>
+            <input type="text"><br>
+
+            <label for="">Faculty:</label>
+            <input type="text"><br>
+
+            <label for="">Domain:</label>
+            <input type="text"><br>
+
+            <label for="">Start year:</label>
+            <input type="text"><br>
+
+            <label for="">Graduation year:</label>
+            <input type="text"><br>
+
+            <input type="submit" value="Update">
+        </form>
+
+        <h1>Update Student Info from .csv</h1>
+        <form action="">
+            <input type="file" value="Load .csv file">
+            <input type="button" name="" id="" value="Update">
+        </form>
+    </div>
+
+    <!-- Requests -->
+    <div class="card">
+        <h1>Pending Request to Solve</h1>
+        <table>
+            <thead>
+                <tr>
+                    <th>Type</th>
+                    <th>To</th>
+                    <th>Sent date</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                    <tr>
+                        <td>Foaie Matricola</td>
+                        <td>Walter White</td>
+                        <td>20 - Ian - 2008</td>
+                        <td>Solved</td>
+                    </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- My Students -->
+    <div class="card">
+        <h1>Students You Manage</h1>
+        <table>
+            <thead>
+                <tr>
+                    <th>Username</th>
+                    <th>Email</th>
+                    <th>Faculty</th>
+                    <th>Domain</th>
+                    <th>Start Year</th>
+                    <th>End Year</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for student in students %}
+                    <tr>
+                        <td>{{ student.user.username }}</td>
+                        <td>{{ student.user.email }}</td>
+                        <td>{{ student.faculty }}</td>
+                        <td>{{ student.domain }}</td>
+                        <td>{{ student.start_year }}</td>
+                        <td>{{ student.graduation_year }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Logout btn -->
+     <form action="" method="post">
+        <input class="bad_btn" type="submit" name="logout" id="logout" value="Logout">
+     </form>
+{% endblock body %}
+
+{% block footer %}
+        <p>end of app</p>
+{% endblock footer %}

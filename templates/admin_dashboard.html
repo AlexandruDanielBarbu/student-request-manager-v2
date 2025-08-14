@@ -60,7 +60,29 @@
         </form>
     </div>
 
-    <!-- Lst Users -->
+    <!-- Asign Students to an Employee -->
+    <div class="card">
+        <h1>Assign Student to Employee</h1>
+        <form action="/admin-dashboard" method="POST">
+            <label for="student_username">Student username:</label>
+            <input type="text" name="student_username" id="student_username"><br>
+
+            <label for="employee_username">Employee username:</label>
+            <input type="text" name="employee_username" id="employee_username"><br>
+
+            <input class="good_btn" type="submit" name="join_students" value="Join">
+        </form>
+
+        <h1>Assign Students to Employees from a .csv file</h1>
+        <form action="/admin-dashboard" enctype="multipart/form-data" method="POST">
+            <label for="csv_file">Select CSV file:</label>
+            <input type="file" name="csv_file" id="csv_file">
+
+            <input class="good_btn" type="submit" name="csv_join_students" value="Join">
+        </form>
+    </div>
+
+    <!-- List Users -->
     <div class="card">
         <h1>List of all Users</h1>
         <table>

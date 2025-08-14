@@ -1,2 +1,4 @@
 env/
 instance/
+__pycache__/
+migrations/
