@@ -442,20 +442,131 @@ def admin_dashboard():
     all_users = User.query.all()
     return render_template('admin_dashboard.html', users=all_users, now_user=current_user)
 
-@app.route('/employee-dashboard')
+@app.route('/employee-dashboard', methods=['GET', 'POST'])
 @login_required
 @employee_required
 def employee_dashboard():
+    if request.method == 'POST':
+        if 'logout' in request.form:
+            return redirect(url_for('logout'))
+
+        if 'update_student' in request.form:
+            student_username = request.form.get('username')
+            faculty          = request.form.get('faculty')
+            domain           = request.form.get('domain')
+            start_year       = request.form.get('start_year')
+            graduation_year  = request.form.get('graduation_year')
+
+            if not faculty or not domain or not start_year or not graduation_year:
+                flash(f"Please complete the entire form!")
+                return redirect(url_for('employee_dashboard'))
+
+            student_user = User.query.filter_by(username=student_username).first()
+            if not student_user:
+                flash("The selected user does not exist!")
+                return redirect(url_for('employee_dashboard'))
+
+            student_data = student_user.student_info
+            if not student_data:
+                student_data = Student(user_id=student_user.id)
+                db.session.add(student_data)
+
+            # Update user data here
+            student_data.faculty = faculty
+            student_data.domain = domain
+
+            try:
+                if start_year:
+                    student_data.start_year = int(start_year)
+                if graduation_year:
+                    student_data.graduation_year = int(graduation_year)
+            except ValueError:
+                flash("Start year and graduation year must be valid numbers.")
+                return redirect(url_for('employee_dashboard'))
+
+            try:
+                db.session.commit()
+                flash(f"Student data for {student_username} has been updated successfully!")
+            except Exception as e:
+                db.session.rollback()
+                flash(f"An error occurred while updating student data: {e}")
+
+        if 'update_student_csv' in request.form:
+            # Assuming this is part of your employee_dashboard route
+            try:
+                csv_file = request.files.get('csv_file')
+
+                if not csv_file or not csv_file.filename.endswith('.csv'):
+                    flash('Please upload a valid CSV file for student updates.', 'error')
+                    return redirect(url_for('employee_dashboard'))
+
+                csv_text = StringIO(csv_file.stream.read().decode('utf-8'))
+                csv_reader = csv.DictReader(csv_text, delimiter=',')
+                updated_count = 0
+
+                for row in csv_reader:
+                    username        = row.get('username')
+                    faculty         = row.get('faculty')
+                    domain          = row.get('domain')
+                    start_year      = row.get('start_year')
+                    graduation_year = row.get('graduation_year')
+
+                    # Skip if username is missing, as it's the key to finding the student
+                    if not username:
+                        print(f"Skipping row due to missing username: {row}")
+                        continue
+
+                    # Find the user and their student data
+                    student_user = User.query.filter_by(username=username).first()
+                    if not student_user:
+                        print(f"User with username '{username}' not found. Skipping.")
+                        continue
+
+                    # Get or create the student data record
+                    student_data = student_user.student_info
+                    if not student_data:
+                        student_data = Student(user_id=student_user.id)
+                        db.session.add(student_data)
+
+                    # Update the student data with values from the CSV, if they exist
+                    if faculty:
+                        student_data.faculty = faculty
+                    if domain:
+                        student_data.domain = domain
+
+                    try:
+                        if start_year:
+                            student_data.start_year = int(start_year)
+                        if graduation_year:
+                            student_data.graduation_year = int(graduation_year)
+                    except ValueError:
+                        print(f"Invalid year data for user '{username}'. Skipping update for this row.")
+                        continue
+
+                    updated_count += 1
+
+                db.session.commit()
+                flash(f'{updated_count} student records were successfully updated from the CSV.', 'success')
+                return redirect(url_for('employee_dashboard'))
+
+            except Exception as e:
+                db.session.rollback()
+                flash(f'An error occurred during bulk student data update: {e}', 'error')
+                return redirect(url_for('employee_dashboard'))
 
     employee = User.query.filter_by(username=current_user.username).first()
     all_students = employee.students_under_care.all()
 
     return render_template('employee_dashboard.html', now_user=current_user, students=all_students)
 
-@app.route('/student-dashboard')
+@app.route('/student-dashboard', methods=['GET', 'POST'])
 @login_required
 @student_required
 def student_dashboard():
+    if request.method == 'POST':
+        if 'logout' in request.form:
+            return redirect(url_for('logout'))
+
     return render_template('student_dashboard.html', now_user=current_user)
 
 

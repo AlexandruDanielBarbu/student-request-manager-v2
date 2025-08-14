@@ -20,11 +20,17 @@
     <!-- About me -->
     <div class="card">
         <h1>About me</h1>
-        <p>An universitar</p>
-        <p>Ciclu de studii</p>
-        <p>Facultate</p>
-        <p>Domeniu</p>
-        <p>Program Studiu</p>
+        <label for="faculty">Faculty:</label>
+        <button id="faculty" class="student_username">{{ now_user.student_info.faculty }}</button><br>
+
+        <label for="domain">Domain:</label>
+        <button id="domain" class="student_username">{{ now_user.student_info.domain }}</button><br>
+
+        <label for="start_year">Start Year:</label>
+        <button id="start_year" class="student_username">{{ now_user.student_info.start_year }}</button><br>
+
+        <label for="graduation_year">Graduation Year:</label>
+        <button id="graduation_year" class="student_username">{{ now_user.student_info.graduation_year }}</button>
     </div>
 
     <!-- Pune o intrebare -->

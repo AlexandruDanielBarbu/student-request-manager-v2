@@ -14,67 +14,43 @@
     <div class="card">
         <h1>Post an Announcement</h1>
         <form action="">
-            <input type="text">
+            <input type="text" class="large_input">
         </form>
     </div>
 
     <!-- Update Student Info -->
     <div class="card">
         <h1>Update Student Info</h1>
-        <form action="">
-            <label for="">Username:</label>
-            <input type="text"><br>
+        <form action="/employee-dashboard" method="POST">
+            <label for="username">Username:</label>
+            <input type="text" id="username" name="username"><br>
 
-            <label for="">Faculty:</label>
-            <input type="text"><br>
+            <label for="faculty">Faculty:</label>
+            <input type="text" id="faculty" name="faculty"><br>
 
-            <label for="">Domain:</label>
-            <input type="text"><br>
+            <label for="domain">Domain:</label>
+            <input type="text" id="domain" name="domain"><br>
 
-            <label for="">Start year:</label>
-            <input type="text"><br>
+            <label for="start_year">Start year:</label>
+            <input type="number" id="start_year" name="start_year"><br>
 
-            <label for="">Graduation year:</label>
-            <input type="text"><br>
+            <label for="graduation_year">Graduation year:</label>
+            <input type="number" id="graduation_year" name="graduation_year"><br>
 
-            <input type="submit" value="Update">
+            <input type="submit" name="update_student" value="Update" class="good_btn">
         </form>
 
         <hr class="employee_hr">
 
         <h1>Update Student Info from .csv</h1>
-        <form action="">
-            <input type="file" value="Load .csv file">
-            <input type="button" name="" id="" value="Update">
+        <form action="/employee-dashboard" enctype="multipart/form-data" method="POST">
+            <input type="file" name="csv_file">
+            <input type="submit" name="update_student_csv" value="Update" class="good_btn">
         </form>
-    </div>
 
-    <!-- Requests -->
-    <div class="card">
-        <h1>Pending Request to Solve</h1>
-        <table>
-            <thead>
-                <tr>
-                    <th>Type</th>
-                    <th>To</th>
-                    <th>Sent date</th>
-                    <th>Status</th>
-                </tr>
-            </thead>
+        <hr class="employee_hr">
 
-            <tbody>
-                    <tr>
-                        <td>Foaie Matricola</td>
-                        <td>Walter White</td>
-                        <td>20 - Ian - 2008</td>
-                        <td>Solved</td>
-                    </tr>
-            </tbody>
-        </table>
-    </div>
-
-    <!-- My Students -->
-    <div class="card">
+        <!-- My Students -->
         <h1>Students You Manage</h1>
         <table>
             <thead>
@@ -101,10 +77,35 @@
                 {% endfor %}
             </tbody>
         </table>
+
+    </div>
+
+    <!-- Requests -->
+    <div class="card">
+        <h1>Pending Request to Solve</h1>
+        <table>
+            <thead>
+                <tr>
+                    <th>Type</th>
+                    <th>To</th>
+                    <th>Sent date</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                    <tr>
+                        <td>Foaie Matricola</td>
+                        <td>Walter White</td>
+                        <td>20 - Ian - 2008</td>
+                        <td>Solved</td>
+                    </tr>
+            </tbody>
+        </table>
     </div>
 
     <!-- Logout btn -->
-     <form action="" method="post">
+     <form action="" method="POST">
         <input class="bad_btn" type="submit" name="logout" id="logout" value="Logout">
      </form>
 {% endblock body %}
