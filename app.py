@@ -1,16 +1,28 @@
 # Imports
 import os
 import csv
+import io
+import datetime
 
+from datetime         import datetime, timezone
 from io               import StringIO
-from flask            import Flask, render_template, session, redirect, url_for, request, flash
+
+from flask            import Flask, render_template, session, redirect, url_for, request, flash, send_file
 from flask_scss       import Scss
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate    import Migrate
-from sqlalchemy.exc   import IntegrityError
 from flask_login      import LoginManager, current_user, login_required, login_user, logout_user, UserMixin
+
+from sqlalchemy       import desc
+from sqlalchemy.exc   import IntegrityError
 from enum             import Enum
 from functools        import wraps
+
+from reportlab.pdfgen        import canvas
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.units     import cm
+from reportlab.platypus      import SimpleDocTemplate, Paragraph, Spacer
+from reportlab.lib.styles    import getSampleStyleSheet
 
 class RoleType(Enum):
     ADMIN    = 'ADMIN'
@@ -126,6 +138,16 @@ class Student(db.Model):
 
     def __repr__(self):
         return f"<Student info for {self.user.username}>"
+
+class Log(db.Model):
+    __tablename__ = 'logs'
+
+    id            = db.Column(db.Integer, primary_key=True)
+    user_id       = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    document_type = db.Column(db.String(100), nullable=False)
+    requested_at  = db.Column(db.DateTime, default=datetime.now(timezone.utc), nullable=False)
+    served_at     = db.Column(db.DateTime, default=datetime.now(timezone.utc), nullable=False)
+    user          = db.relationship('User', backref='logs')
 
 # Routes
 @app.route("/")
@@ -567,7 +589,105 @@ def student_dashboard():
         if 'logout' in request.form:
             return redirect(url_for('logout'))
 
-    return render_template('student_dashboard.html', now_user=current_user)
+        if 'request_document' in request.form:
+            # Get the document type
+            doc_type = request.form.get('document-type')
+
+            if doc_type == 'adeverinta_student':
+                try:
+                    # Get student data
+                    student_name = current_user.username
+                    faculty      = current_user.student_info.faculty
+                    domain       = current_user.student_info.domain
+                    start_year   = current_user.student_info.start_year
+                    end_year     = current_user.student_info.graduation_year
+                    reason       = request.form.get('reason')
+
+                    # Hold the PDF data in a buffer
+                    buffer = io.BytesIO()
+
+                    # Create a document template
+                    doc = SimpleDocTemplate(buffer, pagesize=A4)
+                    styles = getSampleStyleSheet()
+                    story = []
+
+                    # Add the header as a Paragraph
+                    title = Paragraph("ADEVERINTA DE STUDENT", styles['Heading1'])
+                    story.append(title)
+                    story.append(Spacer(1, 12)) # Adds a vertical space of 12 points
+
+                    # Create the main body text using the Paragraph class
+                    body_text_1 = f"Prezenta se elibereaza domnului/doamnei student(a) {student_name} la facultatea {faculty}, specializarea {domain}, promotie {start_year} - {end_year} pentru a-i servi la: {reason}."
+                    body_text_2 = "Va multumim pentru intelegere!"
+
+                    # Create Paragraphs for each line of text. The Paragraph class handles wrapping.
+                    p1 = Paragraph(body_text_1, styles['Normal'])
+                    story.append(p1)
+                    story.append(Spacer(1, 12)) # Adds a vertical space
+
+                    p2 = Paragraph(body_text_2, styles['Normal'])
+                    story.append(p2)
+                    story.append(Spacer(1, 12)) # Adds a vertical space
+
+                    # Add other content as needed...
+
+                    # Build the document
+                    doc.build(story)
+
+                    # Move the buffer's cursor to the beginning
+                    buffer.seek(0)
+
+                    # Create a new log entry
+                    new_log = Log(
+                        user_id=current_user.id,
+                        document_type=doc_type, # You can get this from a form field if you have multiple document types
+                        requested_at=datetime.utcnow(),
+                        served_at=datetime.utcnow()
+                    )
+
+                    db.session.add(new_log)
+                    db.session.commit()
+
+                    # Serve the generated PDF to the user
+                    return send_file(
+                        buffer,
+                        download_name='Adeverinta_Student.pdf',
+                        as_attachment=True,
+                        mimetype='application/pdf'
+                    )
+                except Exception as e:
+                    flash(f"An error occurred: {str(e)}", 500)
+                    return redirect(url_for('student_dashboard'))
+
+            elif doc_type == 'situatie_scolara':
+                # Create a new log entry
+                new_log = Log(
+                    user_id=current_user.id,
+                    document_type=doc_type,
+                    requested_at=datetime.utcnow(),
+                    served_at=datetime.utcnow()
+                )
+
+                db.session.add(new_log)
+                db.session.commit()
+
+            elif doc_type == 'foaie_matricola':
+                # Create a new log entry
+                new_log = Log(
+                    user_id=current_user.id,
+                    document_type=doc_type, # You can get this from a form field if you have multiple document types
+                    requested_at=datetime.utcnow(),
+                    served_at=datetime.utcnow()
+                )
+
+                db.session.add(new_log)
+                db.session.commit()
+
+    recent_requests = Log.query.filter_by(user_id=current_user.id)\
+                           .order_by(desc(Log.requested_at))\
+                           .limit(5)\
+                           .all()
+    return render_template('student_dashboard.html', now_user=current_user, recent_requests=recent_requests)
 
 
 @app.route('/login', methods=['GET', 'POST'])

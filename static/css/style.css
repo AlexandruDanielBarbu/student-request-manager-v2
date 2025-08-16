@@ -108,4 +108,21 @@ hr {
 
 .student_hr {
   border-color: rgba(186, 247, 186, 0.833);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse; /* Merges the borders of the cells */
+}
+table th {
+  background-color: #e0f2f1;
+  color: #004d40;
+  padding: 10px;
+  text-align: left;
+}
+table td {
+  padding: 10px;
+}
+table tr {
+  border-bottom: 1px solid #ddd;
 }/*# sourceMappingURL=style.css.map */

@@ -145,3 +145,23 @@ hr {
 .student_hr {
     border-color: $student_body_color;
 }
+
+table {
+  width: 100%;
+  border-collapse: collapse; /* Merges the borders of the cells */
+
+  th {
+    background-color: #e0f2f1;
+    color: #004d40;
+    padding: 10px;
+    text-align: left;
+  }
+
+  td {
+    padding: 10px;
+  }
+
+  tr {
+    border-bottom: 1px solid #ddd;
+  }
+}

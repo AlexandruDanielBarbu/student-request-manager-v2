@@ -46,43 +46,48 @@
 
     <!-- Cere un document -->
     <div class="card">
-        <h1>Cere un document</h1>
-
-        <form action="">
-            <label for="type">Tip:</label>
-            <select id="type" name="type">
-                <option value="ADMIN">Foaie Matricola</option>
-                <option value="EMPLOYEE">Situatie Scolara</option>
-                <option value="STUDENT">Adeverinta Student</option>
+        <h1>Get a document</h1>
+        <form action="/student-dashboard" method="POST">
+            <label for="document-type">Select a document:</label>
+            <select id="document-type" name="document-type">
+                <option value="foaie_matricola">Foaie Matricola</option>
+                <option value="situatie_scolara">Situatie Scolara</option>
+                <option value="adeverinta_student">Adeverinta Student</option>
             </select><br>
 
-            <input class="good_btn" type="submit" name="add_user" id="" value="Get">
-        </form>
-    </div>
+            <div id="reason-container" name="reason-container" style="display: none;">
+                <label for="reason">Reason for Adeverinta Student:</label>
+                <input type="text" id="reason" name="reason">
+            </div>
 
-    <div class="card">
-        <h1>Request List</h1>
-                <table>
+            <input class="good_btn" type="submit" name="request_document" id="" value="Get">
+        </form>
+
+        <hr class="student_hr">
+
+        <table>
             <thead>
                 <tr>
-                    <th>Type</th>
-                    <th>To</th>
-                    <th>Sent date</th>
-                    <th>Status</th>
+                    <th>Document Type</th>
+                    <th>Requested By</th>
+                    <th>Date Requested</th>
+                    <th>Date Solved</th>
                 </tr>
             </thead>
 
-            <tbody>
+            {% for request in recent_requests %}
+                <tbody>
                     <tr>
-                        <td>Foaie Matricola</td>
-                        <td>Walter White</td>
-                        <td>20 - Ian - 2008</td>
-                        <td>Solved</td>
+                        <td>{{ request.document_type }}</td>
+                        <td>{{ request.user.username }}</td>
+                        <td>{{ request.requested_at }}</td>
+                        <td>{{ request.served_at }}</td>
                     </tr>
-            </tbody>
+                </tbody>
+            {% endfor %}
         </table>
-
     </div>
+
     <!-- Logout btn -->
      <form action="" method="post">
         <input class="bad_btn" type="submit" name="logout" id="logout" value="Logout">
@@ -92,3 +97,7 @@
 {% block footer %}
         <p>end of app</p>
 {% endblock footer %}
+
+{% block js_scripts %}
+     <script src="../static/scripts/document_reason.js"></script>
+{% endblock js_scripts %}

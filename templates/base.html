@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="../static/css/style.css">
 
     <title>{% block page_title %} {% endblock page_title %}</title>
 
@@ -18,5 +18,7 @@
     <footer>
         {% block footer %} {% endblock footer %}
     </footer>
+
+    {% block js_scripts %} {% endblock js_scripts %}
 </body>
 </html>
