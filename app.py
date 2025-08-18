@@ -4,6 +4,8 @@ import csv
 import io
 import datetime
 
+from dotenv           import load_dotenv
+from google           import genai
 from datetime         import datetime, timezone
 from io               import StringIO
 
@@ -74,6 +76,14 @@ def employee_required(f):
         # All is good
         return f(*args, **kwargs)
     return decorated_function
+
+# Gemini AI setup
+load_dotenv()
+api_key = os.getenv("GEMINI_API_KEY")
+if not api_key:
+    print("You have to provide an API key for google Gemini.")
+
+client = genai.Client(api_key=api_key)
 
 # App
 app = Flask(__name__)
@@ -684,6 +694,14 @@ def student_dashboard():
                 db.session.add(new_log)
                 db.session.commit()
                 return redirect(url_for('student_dashboard'))
+
+        if 'submit_question' in request.form:
+            question_text = request.form.get('question')
+            response = client.models.generate_content(
+                model="gemini-2.0-flash",
+                contents=f"{question_text}"
+            )
+            print(f"YOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO    {response}    YOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO")
 
     recent_requests = Log.query.filter_by(user_id=current_user.id)\
                            .order_by(desc(Log.requested_at))\
