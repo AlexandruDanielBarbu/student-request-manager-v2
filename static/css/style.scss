@@ -40,7 +40,7 @@ body {
         margin: 10px;
     }
 
-    h1 {
+    h1, h2 {
         margin: 10px;
     }
 
@@ -170,4 +170,5 @@ table {
     @extend input;
     width: 500px;
     height: 100px;
+    margin: 10px;
 }

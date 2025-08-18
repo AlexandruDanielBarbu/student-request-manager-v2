@@ -18,7 +18,7 @@
         </form>
     </div>
 
-    <!-- Update Student Info -->
+    <!-- Student Management -->
     <div class="card">
         <h1>Update Student Info</h1>
         <form action="/employee-dashboard" method="POST">
@@ -82,28 +82,70 @@
 
     <!-- Requests -->
     <div class="card">
-        <h1>Pending Request to Solve</h1>
+        <h1>Answer Questions</h1>
+        <form action="/employee_dashboard" method="post">
+            <label for="question_id">Question ID:</label>
+            <input type="number" name="question_id" value="12"><br>
+
+            <label for="employee_answer">Your Answer:</label><br>
+            <textarea id="employee_answer" name="employee_answer" rows="5" cols="40" class="textarea"></textarea><br>
+
+            <input type="submit" class="good_btn" value="Submit Answer">
+        </form>
+
+        <hr class="employee_hr">
+
+        <h1>Student's Questions</h1>
         <table>
             <thead>
                 <tr>
-                    <th>Type</th>
-                    <th>To</th>
-                    <th>Sent date</th>
-                    <th>Status</th>
+                    <th>Question ID</th>
+                    <th>From</th>
+                    <th>Question</th>
+                    <th>Asked At</th>
+                    <th>Answered At</th>
                 </tr>
             </thead>
 
             <tbody>
+                {% for question in student_questions %}
                     <tr>
-                        <td>Foaie Matricola</td>
-                        <td>Walter White</td>
-                        <td>20 - Ian - 2008</td>
-                        <td>Solved</td>
+                        <td>{{ question.id }}</td>
+                        <td>{{ question.student.user.username }}</td>
+                        <td>{{ question.question_text }}</td>
+                        <td>{{ question.asked_at}}</td>
+                        <td>{{ question.answered_by_employee_at }} </td>
                     </tr>
+                {% endfor %}
             </tbody>
         </table>
     </div>
 
+    <div class="card">
+        <h1>Student's Documents Request Log</h1>
+        <table>
+            <thead>
+                <tr>
+                    <th>Student Username</th>
+                    <th>Document Type</th>
+                    <th>Requested At</th>
+                    <th>Served At</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for log in all_logs %}
+                    <tr>
+                        <td>{{ log.user.username }}</td>
+                        <td>{{ log.document_type }}</td>
+                        <td>{{ log.requested_at }}</td>
+                        <td>{{ log.served_at}}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+    </div>
     <!-- Logout btn -->
      <form action="" method="POST">
         <input class="bad_btn" type="submit" name="logout" id="logout" value="Logout">

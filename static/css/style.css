@@ -25,7 +25,7 @@ body {
 .card label {
   margin: 10px;
 }
-.card h1 {
+.card h1, .card h2 {
   margin: 10px;
 }
 .card input, .card .textarea, .card select {
@@ -130,4 +130,5 @@ table tr {
 .textarea {
   width: 500px;
   height: 100px;
+  margin: 10px;
 }/*# sourceMappingURL=style.css.map */

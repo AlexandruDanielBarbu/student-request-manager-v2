@@ -607,8 +607,16 @@ def employee_dashboard():
 
     employee = User.query.filter_by(username=current_user.username).first()
     all_students = employee.students_under_care.all()
+    student_questions = Question.query.filter_by(employee_id=current_user.id).all()
+    all_logs = Log.query.limit(6).all()
 
-    return render_template('employee_dashboard.html', now_user=current_user, students=all_students)
+    return render_template(
+        'employee_dashboard.html',
+        now_user = current_user,
+        students = all_students,
+        student_questions = student_questions,
+        all_logs = all_logs
+    )
 
 @app.route('/student-dashboard', methods=['GET', 'POST'])
 @login_required
@@ -720,8 +728,10 @@ def student_dashboard():
                 model="gemini-2.0-flash",
                 contents=f"{question_text}"
             )
+
             question_entry = Question(
                 student_id      = current_user.student_info.id,
+                employee_id     = current_user.student_info.responsible_employee_id,
                 question_text   = question_text,
                 ai_answer       = response.text
             )
