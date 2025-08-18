@@ -42,6 +42,31 @@
 
             <input class="good_btn" type="submit" name="submit_question" id="" value="Submit">
         </form>
+
+        <hr class="student_hr">
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Question Text</th>
+                    <th>AI Answer</th>
+                    <th>Employee Answer</th>
+                    <th>Employee Answered at</th>
+                </tr>
+            </thead>
+
+            {% for question in student_asked_questions %}
+                <tbody>
+                    <tr>
+                        <td>{{ question.question_text }}</td>
+                        <td>{{ question.ai_answer }}</td>
+                        <td>{{ question.employee_answer }}</td>
+                        <td>{{ question.answered_by_employee_at }}</td>
+                    </tr>
+                </tbody>
+            {% endfor %}
+        </table>
+
     </div>
 
     <!-- Cere un document -->

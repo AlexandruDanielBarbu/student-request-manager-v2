@@ -159,6 +159,25 @@ class Log(db.Model):
     served_at     = db.Column(db.DateTime, default=datetime.now(timezone.utc), nullable=False)
     user          = db.relationship('User', backref='logs')
 
+class Question(db.Model):
+    __tablename__ = 'questions'
+
+    id              = db.Column(db.Integer, primary_key=True)
+    student_id      = db.Column(db.Integer, db.ForeignKey('students.id', name='fk_student_asking'), nullable=False)
+    employee_id     = db.Column(db.Integer, db.ForeignKey('users.id', name='fk_questions_employee_id'))
+    question_text   = db.Column(db.Text, nullable=False)
+    ai_answer       = db.Column(db.Text)
+    employee_answer = db.Column(db.Text)
+    asked_at        = db.Column(db.DateTime, default=datetime.now(timezone.utc), nullable=False)
+    answered_by_employee_at = db.Column(db.DateTime)
+
+    # Relationships
+    student  = db.relationship('Student', backref='questions')
+    employee = db.relationship('User', foreign_keys=[employee_id], backref='answered_questions')
+
+    def __repr__(self):
+        return f"<Question from {self.student.user.username}>"
+
 # Routes
 @app.route("/")
 def home():
@@ -701,13 +720,31 @@ def student_dashboard():
                 model="gemini-2.0-flash",
                 contents=f"{question_text}"
             )
-            print(f"YOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO    {response}    YOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO")
+            question_entry = Question(
+                student_id      = current_user.student_info.id,
+                question_text   = question_text,
+                ai_answer       = response.text
+            )
+
+            db.session.add(question_entry)
+            db.session.commit()
+            print(f"YOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO    Question added    YOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO")
+            return redirect(url_for('student_dashboard'))
+
+    all_questions = Question.query.filter_by(student_id = current_user.student_info.id)\
+                            .order_by(desc(Question.asked_at))\
+                            .all()
 
     recent_requests = Log.query.filter_by(user_id=current_user.id)\
                            .order_by(desc(Log.requested_at))\
                            .limit(5)\
                            .all()
-    return render_template('student_dashboard.html', now_user=current_user, recent_requests=recent_requests)
+    return render_template(
+        'student_dashboard.html',
+        now_user = current_user,
+        recent_requests = recent_requests,
+        student_asked_questions = all_questions
+    )
 
 
 @app.route('/login', methods=['GET', 'POST'])
