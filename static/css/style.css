@@ -28,7 +28,7 @@ body {
 .card h1 {
   margin: 10px;
 }
-.card input, .card select {
+.card input, .card .textarea, .card select {
   font-family: "Gill Sans", "Gill Sans MT", Calibri, "Trebuchet MS", sans-serif;
   margin-bottom: 10px;
   padding: 5px;
@@ -112,7 +112,7 @@ hr {
 
 table {
   width: 100%;
-  border-collapse: collapse; /* Merges the borders of the cells */
+  border-collapse: collapse;
 }
 table th {
   background-color: #e0f2f1;
@@ -125,4 +125,9 @@ table td {
 }
 table tr {
   border-bottom: 1px solid #ddd;
+}
+
+.textarea {
+  width: 500px;
+  height: 100px;
 }/*# sourceMappingURL=style.css.map */

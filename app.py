@@ -670,6 +670,7 @@ def student_dashboard():
 
                 db.session.add(new_log)
                 db.session.commit()
+                return redirect(url_for('student_dashboard'))
 
             elif doc_type == 'foaie_matricola':
                 # Create a new log entry
@@ -682,6 +683,7 @@ def student_dashboard():
 
                 db.session.add(new_log)
                 db.session.commit()
+                return redirect(url_for('student_dashboard'))
 
     recent_requests = Log.query.filter_by(user_id=current_user.id)\
                            .order_by(desc(Log.requested_at))\
