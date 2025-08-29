@@ -77,8 +77,11 @@ def employee_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-# Gemini AI setup
+# load the .env file
 load_dotenv()
+
+# Gemini AI setup
+# Get the API key
 api_key = os.getenv("GEMINI_API_KEY")
 if not api_key:
     print("You have to provide an API key for google Gemini.")
@@ -90,11 +93,14 @@ app = Flask(__name__)
 Scss(app)
 
 # Database setup
-app.config['SECRET_KEY'] = 'something'
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///database.db"
 db = SQLAlchemy(app)
-
 migrate = Migrate(app, db)
+
+# Get the secret key for Flask login
+secret_key = os.getenv("SESSION_SECRET_KEY")
+# Set the secret key
+app.config['SECRET_KEY'] = secret_key
 
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -111,10 +117,11 @@ class Role(db.Model):
 
     id    = db.Column(db.Integer, primary_key=True)
     name  = db.Column(db.String(50), unique=True, nullable=False)
+
     users = db.relationship('User', backref='role', lazy='dynamic')
 
     def __repr__(self):
-        return f"<{self.name}>"
+        return f"<{self.id} - {self.name} - {self.users}>"
 
 class User(db.Model, UserMixin):
     __tablename__ = 'users'
@@ -125,11 +132,12 @@ class User(db.Model, UserMixin):
     email    = db.Column(db.String(120), unique=True, nullable=False)
 
     role_id      = db.Column(db.Integer, db.ForeignKey('roles.id'))
+
     student_info = db.relationship('Student', foreign_keys='Student.user_id', backref='user', uselist=False)
     students_under_care = db.relationship('Student', foreign_keys='Student.responsible_employee_id', backref='responsible_employee', lazy='dynamic')
 
     def __repr__(self):
-        return f"<{self.username}>"
+        return f"<{self.id} - {self.username} - {self.email}>"
 
     def check_password(self, password):
         return self.password == password
@@ -142,12 +150,13 @@ class Student(db.Model):
     domain          = db.Column(db.String(100), nullable=True)
     start_year      = db.Column(db.Integer, nullable=True)
     graduation_year = db.Column(db.Integer, nullable=True)
+    # full_name     = db.Column(db.String(100), nullable=True)
 
     user_id         = db.Column(db.Integer, db.ForeignKey('users.id', name='fk_user_id'), unique=True, nullable=False)
     responsible_employee_id = db.Column(db.Integer, db.ForeignKey('users.id', name='fk_students_responsible_employee'), nullable=True)
 
     def __repr__(self):
-        return f"<Student info for {self.user.username}>"
+        return f"<Info {self.user.username}: {self.id} - {self.faculty} - {self.domain} - [{self.start_year}, {self.graduation_year}]>"
 
 class Log(db.Model):
     __tablename__ = 'logs'
@@ -157,6 +166,7 @@ class Log(db.Model):
     document_type = db.Column(db.String(100), nullable=False)
     requested_at  = db.Column(db.DateTime, default=datetime.now(timezone.utc), nullable=False)
     served_at     = db.Column(db.DateTime, default=datetime.now(timezone.utc), nullable=False)
+
     user          = db.relationship('User', backref='logs')
 
 class Question(db.Model):
@@ -171,12 +181,11 @@ class Question(db.Model):
     asked_at        = db.Column(db.DateTime, default=datetime.now(timezone.utc), nullable=False)
     answered_by_employee_at = db.Column(db.DateTime)
 
-    # Relationships
     student  = db.relationship('Student', backref='questions')
     employee = db.relationship('User', foreign_keys=[employee_id], backref='answered_questions')
 
     def __repr__(self):
-        return f"<Question from {self.student.user.username}>"
+        return f"<Question from {self.student.user.username} to {self.employee.username}>"
 
 # Routes
 @app.route("/")
@@ -198,54 +207,68 @@ def dashboard():
     else:
         return 'Unauthorized'
 
+# Test .csv file conditions
+def check_if_valid_csv_file(file, redirect_to):
+    if not file or not file.filename.endswith('.csv'):
+        print('ERROR:    Please upload a valid CSV file for user creation.')
+        return redirect(url_for(redirect_to))
+
+def add_one_user(username, password, email, role):
+    try:
+        generic_role = Role.query.filter_by(name=role).first()
+
+        # Checking if ROLE exists
+        if not generic_role:
+            generic_role = Role(name=role)
+
+            db.session.add(generic_role)
+            db.session.commit()
+
+        user = User.query.filter((User.username == username) | (User.email == email)).first()
+
+        # Checking if the user exists already
+        if not user:
+            user = User(
+                username = username,
+                password = password,
+                email    = email,
+                role     = generic_role
+            )
+
+            db.session.add(user)
+
+            return True
+        else:
+            return False
+
+    except Exception as e:
+        db.session.rollback()
+        print(f"ERROR: {e}")
+        return False
+
+
 @app.route('/admin-dashboard', methods=['GET', 'POST'])
 @login_required
 @admin_required
 def admin_dashboard():
     # We have some data from the forms to handle
     if request.method == 'POST':
+
+        # Adding one user
         if 'add_user' in request.form:
-            # Get data from the form
-            email    = request.form.get('email')
-            username = request.form.get('username')
-            password = request.form.get('password')
-            role     = request.form.get('role')
+            user_added = add_one_user(
+                username = request.form.get('username'),
+                password = request.form.get('password'),
+                email = request.form.get('email'),
+                role = request.form.get('role')
+            )
 
-            try:
-                # Checking if ROLE exists
-                generic_role = Role.query.filter_by(name=role).first()
-                if not generic_role:
-                    a_role = Role(name=role)
-                    db.session.add(a_role)
-                    db.session.commit()
-                    print(f"{a_role} was creted")
-                else:
-                    print(f"{role} already exists")
+            if user_added:
+                db.session.commit()
 
-                # Checking if the user exists already
-                role_obj = Role.query.filter_by(name=role).first()
-                user = User.query.filter_by(username=username).first()
-                if not user:
-                    new_user = User(
-                        username = username,
-                        password = password,
-                        email    = email,
-                        role     = role_obj
-                    )
-                    db.session.add(new_user)
-                    db.session.commit()
-                    print("User created")
-                    return redirect(url_for('admin_dashboard'))
+            return redirect(url_for('admin_dashboard'))
 
-                else:
-                    print("User already exists")
-                    return redirect(url_for('admin_dashboard'))
-
-            except Exception as e:
-                db.session.rollback()
-                print(f"ERROR: {e}")
-                return redirect(url_for('admin_dashboard'))
-
+        # Deleting one user
         if 'delete_user' in request.form:
                 username = request.form.get('username')
 
@@ -254,117 +277,104 @@ def admin_dashboard():
 
                     # Self deletion check
                     if username == current_user.username:
-                        flash("You cannot delete yourself!", 'error')
+                        print('ERROR:    You cannot delete yourself!')
                         return redirect(url_for('admin_dashboard'))
 
                     # Non existent user deletion check
                     if user_to_delete:
                         db.session.delete(user_to_delete)
                         db.session.commit()
+
                         return redirect(url_for('admin_dashboard'))
                     else:
-                        print("This user does not exist therefore it cannot be deleted!")
+                        print('WARNING:    This user does not exist therefore it cannot be deleted!')
+
                         return redirect(url_for('admin_dashboard'))
 
                 except Exception as e:
                     db.session.rollback()
                     print(f"ERROR: {e}")
+                    return redirect(url_for('admin_dashboard'))
 
+        # Adding users from .csv file
         if 'csv_add_user' in request.form:
             try:
                 csv_file = request.files.get('csv_file')
 
-                # Test .csv file conditions
-                if not csv_file or not csv_file.filename.endswith('.csv'):
-                    flash('Please upload a valid CSV file for user creation.', 'error')
-                    return redirect(url_for('admin_dashboard'))
-                else:
-                    # Work the .csv magic
-                    csv_text = StringIO(csv_file.stream.read().decode('utf-8'))
-                    csv_reader = csv.DictReader(csv_text, delimiter=',')
-                    created_count = 0
+                # If not then redirect back to admin_dashboard
+                check_if_valid_csv_file(csv_file, 'admin_dashboard')
 
-                    for row in csv_reader:
-                        # Extract data from the CSV row
-                        username = row.get('username')
-                        email = row.get('email')
-                        password = row.get('password')
-                        role_name = row.get('role')
+                # Work the .csv magic
+                csv_text = StringIO(csv_file.stream.read().decode('utf-8'))
+                csv_reader = csv.DictReader(csv_text, delimiter=',')
+                created_count = 0
 
-                        # Skip if any essential data is missing
-                        if not all([username, email, password, role_name]):
-                            print(f"Skipping row with missing data: {row}")
-                            continue
+                for row in csv_reader:
+                    username = row.get('username'),
+                    email = row.get('email'),
+                    password = row.get('password'),
+                    role_name = row.get('role')
 
-                        # Check if a user with this username or email already exists
-                        existing_user = User.query.filter((User.username == username) | (User.email == email)).first()
-                        if existing_user:
-                            print(f"User with username '{username}' or email '{email}' already exists. Skipping.")
-                            continue
+                    # Skip if any essential data is missing
+                    if not all([username, email, password, role_name]):
+                        print(f"Skipping row with missing data: {row}")
+                        continue
 
-                        # Find or create the role
-                        role_obj = Role.query.filter_by(name=role_name).first()
-                        if not role_obj:
-                            role_obj = Role(name=role_name)
-                            db.session.add(role_obj)
-                            db.session.commit()
+                    user_added = add_one_user(
+                        username = username,
+                        password = password,
+                        email = email,
+                        role = role_name
+                    )
 
-                        # Create and save the new user
-                        new_user = User(
-                            username=username,
-                            email=email,
-                            password=password,
-                            role=role_obj
-                        )
-
-                        db.session.add(new_user)
+                    if user_added:
                         created_count += 1
 
-                    db.session.commit()
-                    flash(f'{created_count} users were successfully created from the CSV.', 'success')
-                    return redirect(url_for('admin_dashboard'))
+                db.session.commit()
+                print(f"SUCCESS:    {created_count} users were successfully created from the CSV.")
+
+                return redirect(url_for('admin_dashboard'))
 
             except Exception as e:
                 db.session.rollback()
-                flash(f'An error occurred during bulk user creation: {e}', 'error')
+                print(f"ERROR:    An error occurred during bulk user creation: {e}")
+
                 return redirect(url_for('admin_dashboard'))
 
+        # Deleting users using .csv file
         if 'csv_delete_user' in  request.form:
             try:
                 csv_file = request.files.get('csv_file')
 
-                # Test .csv file conditions
-                if not csv_file or not csv_file.filename.endswith('.csv'):
-                    flash('Please upload a valid CSV file for user creation.', 'error')
-                    return redirect(url_for('admin_dashboard'))
-                else:
-                    # Work the .csv magic
-                    csv_text = StringIO(csv_file.stream.read().decode('utf-8'))
-                    csv_reader = csv.DictReader(csv_text, delimiter=',')
-                    deleted_count = 0
+                check_if_valid_csv_file(csv_file, 'admin_dashboard')
 
-                    for row in csv_reader:
-                        # Extract data from the CSV row
-                        username = row.get('username')
+                # Work the .csv magic
+                csv_text = StringIO(csv_file.stream.read().decode('utf-8'))
+                csv_reader = csv.DictReader(csv_text, delimiter=',')
+                deleted_count = 0
 
-                        # Self deletion check
-                        if username == current_user.username:
-                            flash("You cannot delete yourself!", 'error')
-                            continue
+                for row in csv_reader:
+                    # Extract data from the CSV row
+                    username = row.get('username')
 
-                        # Check if a user with this username or email already exists
-                        existing_user = User.query.filter((User.username == username)).first()
-                        if not existing_user:
-                            print(f"No such user to delete!")
-                            continue
+                    # Self deletion check
+                    if username == current_user.username:
+                        flash("You cannot delete yourself!", 'error')
+                        continue
 
-                        # Delete the user
-                        db.session.delete(existing_user)
-                        deleted_count += 1
+                    # Check if a user with this username or email already exists
+                    existing_user = User.query.filter((User.username == username)).first()
+                    if not existing_user:
+                        print(f"No such user to delete!")
+                        continue
 
-                    db.session.commit()
-                    flash(f'{deleted_count} users were successfully deleted from the CSV.', 'success')
-                    return redirect(url_for('admin_dashboard'))
+                    # Delete the user
+                    db.session.delete(existing_user)
+                    deleted_count += 1
+
+                db.session.commit()
+                flash(f'{deleted_count} users were successfully deleted from the CSV.', 'success')
+                return redirect(url_for('admin_dashboard'))
 
             except Exception as e:
                 db.session.rollback()
