@@ -207,7 +207,7 @@ def dashboard():
     else:
         return 'Unauthorized'
 
-# Test .csv file conditions
+
 def check_if_valid_csv_file(file, redirect_to):
     if not file or not file.filename.endswith('.csv'):
         print('ERROR:    Please upload a valid CSV file for user creation.')
@@ -246,6 +246,63 @@ def add_one_user(username, password, email, role):
         print(f"ERROR: {e}")
         return False
 
+def delete_one_user(username):
+    try:
+        user_to_delete = User.query.filter_by(username=username).first()
+
+        # Self deletion check
+        if username == current_user.username:
+            print('ERROR:    You cannot delete yourself!')
+            return False
+
+        # Non existent user deletion check
+        if user_to_delete:
+            db.session.delete(user_to_delete)
+            return True
+        else:
+            print('WARNING:    This user does not exist therefore it cannot be deleted!')
+            return False
+
+    except Exception as e:
+        db.session.rollback()
+        print(f"ERROR: {e}")
+        return False
+
+def asign_student_to_employee(student_name, employee_name):
+    try:
+        # Find the users
+        student_user  = User.query.filter_by(username=student_name).first()
+        employee_user = User.query.filter_by(username=employee_name).first()
+
+        # Get the roles
+        student_role = Role.query.filter_by(name='STUDENT').first()
+        employee_role = Role.query.filter_by(name='EMPLOYEE').first()
+
+        # Verify users
+        if not student_user or student_user.role != student_role:
+            print(f'ERROR:    User "{student_name}" not found or is not a student.')
+            return False
+
+        if not employee_user or employee_user.role != employee_role:
+            flash(f'ERROR:    User "{employee_name}" not found or is not an employee.')
+            return False
+
+        # Get student specific data
+        student_data = Student.query.filter_by(user=student_user).first()
+
+        if not student_data:
+            student_data = Student(user=student_user)
+            db.session.add(student_data)
+
+        student_data.responsible_employee = employee_user
+
+        print(f"SUCCESS:    Asigned {student_name} to {employee_name}!")
+        return True
+
+    except Exception as e:
+        db.session.rollback()
+        print(f"ERROR:    {e}")
+        return False
 
 @app.route('/admin-dashboard', methods=['GET', 'POST'])
 @login_required
@@ -254,7 +311,6 @@ def admin_dashboard():
     # We have some data from the forms to handle
     if request.method == 'POST':
 
-        # Adding one user
         if 'add_user' in request.form:
             user_added = add_one_user(
                 username = request.form.get('username'),
@@ -268,35 +324,14 @@ def admin_dashboard():
 
             return redirect(url_for('admin_dashboard'))
 
-        # Deleting one user
         if 'delete_user' in request.form:
-                username = request.form.get('username')
+            user_deleted = delete_one_user(request.form.get('username'))
 
-                try:
-                    user_to_delete = User.query.filter_by(username=username).first()
+            if user_deleted:
+                db.session.commit()
 
-                    # Self deletion check
-                    if username == current_user.username:
-                        print('ERROR:    You cannot delete yourself!')
-                        return redirect(url_for('admin_dashboard'))
+            return redirect(url_for('admin_dashboard'))
 
-                    # Non existent user deletion check
-                    if user_to_delete:
-                        db.session.delete(user_to_delete)
-                        db.session.commit()
-
-                        return redirect(url_for('admin_dashboard'))
-                    else:
-                        print('WARNING:    This user does not exist therefore it cannot be deleted!')
-
-                        return redirect(url_for('admin_dashboard'))
-
-                except Exception as e:
-                    db.session.rollback()
-                    print(f"ERROR: {e}")
-                    return redirect(url_for('admin_dashboard'))
-
-        # Adding users from .csv file
         if 'csv_add_user' in request.form:
             try:
                 csv_file = request.files.get('csv_file')
@@ -341,7 +376,6 @@ def admin_dashboard():
 
                 return redirect(url_for('admin_dashboard'))
 
-        # Deleting users using .csv file
         if 'csv_delete_user' in  request.form:
             try:
                 csv_file = request.files.get('csv_file')
@@ -354,154 +388,80 @@ def admin_dashboard():
                 deleted_count = 0
 
                 for row in csv_reader:
-                    # Extract data from the CSV row
-                    username = row.get('username')
+                    user_deleted = delete_one_user(row.get('username'))
 
-                    # Self deletion check
-                    if username == current_user.username:
-                        flash("You cannot delete yourself!", 'error')
-                        continue
-
-                    # Check if a user with this username or email already exists
-                    existing_user = User.query.filter((User.username == username)).first()
-                    if not existing_user:
-                        print(f"No such user to delete!")
-                        continue
-
-                    # Delete the user
-                    db.session.delete(existing_user)
-                    deleted_count += 1
+                    if user_deleted:
+                        deleted_count += 1
 
                 db.session.commit()
-                flash(f'{deleted_count} users were successfully deleted from the CSV.', 'success')
+                print(f'SUCCESS:    {deleted_count} users were successfully deleted from the CSV.')
                 return redirect(url_for('admin_dashboard'))
 
             except Exception as e:
                 db.session.rollback()
-                flash(f'An error occurred during bulk user deletion: {e}', 'error')
+                print(f'ERROR:    An error occurred during bulk user deletion: {e}')
                 return redirect(url_for('admin_dashboard'))
 
         if 'logout' in request.form:
             return redirect(url_for('logout'))
 
         if 'join_students' in request.form:
-            # Get form data
-            student_name = request.form.get('student_username')
-            employee_name = request.form.get('employee_username')
+            student_asigned = asign_student_to_employee(
+                student_name = request.form.get('student_username'),
+                employee_name = request.form.get('employee_username')
+            )
 
-            try:
-                # Find the users
-                student_user  = User.query.filter_by(username=student_name).first()
-                employee_user = User.query.filter_by(username=employee_name).first()
-
-                # Get the roles
-                student_role = Role.query.filter_by(name='STUDENT').first()
-                employee_role = Role.query.filter_by(name='EMPLOYEE').first()
-
-                # Verify users
-                if not student_user or student_user.role != student_role:
-                    flash(f'Error: User "{student_name}" not found or is not a student.', 'error')
-                    return redirect(url_for('admin_dashboard'))
-
-                if not employee_user or employee_user.role != employee_role:
-                    flash(f'Error: User "{employee_name}" not found or is not an employee.', 'error')
-                    return redirect(url_for('admin_dashboard'))
-
-                # Get student specific data
-                student_data = Student.query.filter_by(user=student_user).first()
-
-                if not student_data:
-                    student_data = Student(user=student_user)
-                    db.session.add(student_data)
-
-                student_data.responsible_employee = employee_user
-
+            if student_asigned:
                 db.session.commit()
-                print(f"Added {student_name} to {employee_name}!")
 
-            except Exception as e:
-                db.session.rollback()
-                print(f"ERROR: {e}")
-                return redirect(url_for('admin_dashboard'))
+            return redirect(url_for('admin_dashboard'))
 
         if 'csv_join_students' in request.form:
             try:
                 csv_file = request.files.get('csv_file')
 
-                # Test .csv file conditions
-                if not csv_file or not csv_file.filename.endswith('.csv'):
-                    flash('Please upload a valid CSV file for user creation.', 'error')
-                    return redirect(url_for('admin_dashboard'))
-                else:
-                    # Work the .csv magic
-                    csv_text = StringIO(csv_file.stream.read().decode('utf-8'))
-                    csv_reader = csv.DictReader(csv_text, delimiter=',')
-                    succes_count = 0
+                check_if_valid_csv_file( csv_file, 'admin_dashboard' )
 
-                    for row in csv_reader:
-                        # Extract data from the CSV row
-                        student_username = row.get('student_username')
-                        employee_username = row.get('employee_username')
+                # Work the .csv magic
+                csv_text = StringIO(csv_file.stream.read().decode('utf-8'))
+                csv_reader = csv.DictReader(csv_text, delimiter=',')
+                succes_count = 0
 
-                        # Skip if any essential data is missing
-                        if not all([student_username, employee_username]):
-                            print(f"Skipping row with missing data: {row}")
-                            continue
+                for row in csv_reader:
+                    # Extract data from the CSV row
+                    student_username = row.get('student_username')
+                    employee_username = row.get('employee_username')
 
-                        # Find the users
-                        student_user = User.query.filter((User.username == student_username)).first()
-                        employee_user = User.query.filter((User.username == employee_username)).first()
+                    # Skip if any essential data is missing
+                    if not all([student_username, employee_username]):
+                        print(f"Skipping row with missing data: {row}")
+                        continue
 
-                        # Check if a user with this username exists
-                        if not student_user or not employee_user:
-                            print(f"'{student_username}' or '{employee_username}' does not exist. Skipping.")
-                            continue
+                    student_asigned = asign_student_to_employee(
+                        student_name = student_username,
+                        employee_name = employee_username
+                    )
 
-                        # Asign the student to the employee
-                        try:
-                            # Get the roles
-                            student_role = Role.query.filter_by(name='STUDENT').first()
-                            employee_role = Role.query.filter_by(name='EMPLOYEE').first()
+                    if student_asigned:
+                        succes_count += 1
 
-                            # Verify users
-                            if not student_user or student_user.role != student_role:
-                                flash(f'Error: User "{student_name}" not found or is not a student.', 'error')
-                                return redirect(url_for('admin_dashboard'))
-
-                            if not employee_user or employee_user.role != employee_role:
-                                flash(f'Error: User "{employee_name}" not found or is not an employee.', 'error')
-                                return redirect(url_for('admin_dashboard'))
-
-                            # Get student specific data
-                            student_data = Student.query.filter_by(user=student_user).first()
-
-                            if not student_data:
-                                student_data = Student(user=student_user)
-                                db.session.add(student_data)
-
-                            student_data.responsible_employee = employee_user
-                            print(f"Added {student_name} to {employee_name}!")
-
-                            succes_count += 1
-
-                        except Exception as e:
-                            db.session.rollback()
-                            print(f"ERROR: {e}")
-                            return redirect(url_for('admin_dashboard'))
-
-                    db.session.commit()
-                    flash(f'{succes_count} students were successfully asigned from the CSV.', 'success')
-                    return redirect(url_for('admin_dashboard'))
+                db.session.commit()
+                print(f'SUCCESS:    {succes_count} students were successfully asigned from the CSV.')
+                return redirect(url_for('admin_dashboard'))
 
             except Exception as e:
                 db.session.rollback()
-                flash(f'An error occurred during bulk user creation: {e}', 'error')
+                print(f'ERROR:    An error occurred during bulk user creation: {e}')
                 return redirect(url_for('admin_dashboard'))
-
 
     # Render all users in a table
     all_users = User.query.all()
-    return render_template('admin_dashboard.html', users=all_users, now_user=current_user)
+
+    return render_template(
+        'admin_dashboard.html',
+        users=all_users,
+        now_user=current_user
+    )
 
 @app.route('/employee-dashboard', methods=['GET', 'POST'])
 @login_required
