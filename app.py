@@ -795,5 +795,11 @@ if __name__ in "__main__":
         except Exception as e:
             print(f"ERROR: {e}")
 
+        # response = client.models.generate_content(
+        #     model="gemini-2.0-flash",
+        #     contents=f"You impersonate a polite student manager of some university. You will answer student questions for now with the most likely answer possible that you can come up with. Keep the answers short, one sentence max from now on."
+        # )
+
+
     app.run(debug=True)
 
