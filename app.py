@@ -121,7 +121,7 @@ class Role(db.Model):
     users = db.relationship('User', backref='role', lazy='dynamic')
 
     def __repr__(self):
-        return f"<{self.id} - {self.name} - {self.users}>"
+        return f"<{self.name}>"
 
 class User(db.Model, UserMixin):
     __tablename__ = 'users'
@@ -356,9 +356,9 @@ def admin_dashboard():
                         continue
 
                     user_added = add_one_user(
-                        username = username,
-                        password = password,
-                        email = email,
+                        username = username[0],
+                        password = password[0],
+                        email = email[0],
                         role = role_name
                     )
 
@@ -388,7 +388,7 @@ def admin_dashboard():
                 deleted_count = 0
 
                 for row in csv_reader:
-                    user_deleted = delete_one_user(row.get('username'))
+                    user_deleted = delete_one_user(username=row.get('username'))
 
                     if user_deleted:
                         deleted_count += 1
@@ -556,11 +556,45 @@ def employee_dashboard():
                 flash(f'An error occurred during bulk student data update: {e}', 'error')
                 return redirect(url_for('employee_dashboard'))
 
+        if 'submit_answer' in request.form:
+            try:
+                question_id = int(request.form.get('question_id'))
+            except Exception as e:
+                print(f'ERROR:    Invalid question ID')
+                return redirect(url_for('employee_dashboard'))
+
+            employee_answer = request.form.get('employee_answer')
+
+            question = Question.query.filter_by(id=question_id).first()
+            if not question:
+                print(f'ERROR:    No matching question with id {question_id} was found.')
+                return redirect(url_for('employee_dashboard'))
+
+            question.employee_answer = employee_answer
+            question.answered_by_employee_at = datetime.now(timezone.utc)
+
+            db.session.add(question)
+            db.session.commit()
+
+            return redirect(url_for('employee_dashboard'))
+
     # Very likely I can use current_user.students_under_care.all() instead
     employee = User.query.filter_by(username=current_user.username).first()
+
     all_students = employee.students_under_care.all()
-    student_questions = Question.query.filter_by(employee_id=current_user.id).all()
-    all_logs = Log.query.limit(6).all()
+
+    student_questions = Question.query\
+        .filter_by(employee_id=current_user.id)\
+        .filter(Question.answered_by_employee_at.is_(None))\
+        .all()
+
+    all_logs = db.session.query(Log).join(
+        User, Log.user_id == User.id
+    ).join(
+        Student, User.id == Student.user_id
+    ).filter(
+        Student.responsible_employee_id == current_user.id
+    ).limit(10).all()
 
     return render_template(
         'employee_dashboard.html',
@@ -603,10 +637,12 @@ def student_dashboard():
                     # Add the header as a Paragraph
                     title = Paragraph("ADEVERINTA DE STUDENT", styles['Heading1'])
                     story.append(title)
-                    story.append(Spacer(1, 12)) # Adds a vertical space of 12 points
+                    story.append(Spacer(1, 12)) # This adds a vertical space of 12 points
 
                     # Create the main body text using the Paragraph class
-                    body_text_1 = f"Prezenta se elibereaza domnului/doamnei student(a) {student_name} la facultatea {faculty}, specializarea {domain}, promotie {start_year} - {end_year} pentru a-i servi la: {reason}."
+                    body_text_1 = f"Prezenta se elibereaza domnului/doamnei student(a) {student_name}" +\
+                                f"la facultatea {faculty}, specializarea {domain}, " +\
+                                f"promotie {start_year} - {end_year} pentru a-i servi la: {reason}."
                     body_text_2 = "Va multumim pentru intelegere!"
 
                     # Create Paragraphs for each line of text. The Paragraph class handles wrapping.
@@ -618,8 +654,6 @@ def student_dashboard():
                     story.append(p2)
                     story.append(Spacer(1, 12)) # Adds a vertical space
 
-                    # Add other content as needed...
-
                     # Build the document
                     doc.build(story)
 
@@ -629,9 +663,7 @@ def student_dashboard():
                     # Create a new log entry
                     new_log = Log(
                         user_id=current_user.id,
-                        document_type=doc_type, # You can get this from a form field if you have multiple document types
-                        requested_at=datetime.utcnow(),
-                        served_at=datetime.utcnow()
+                        document_type=doc_type,
                     )
 
                     db.session.add(new_log)
@@ -644,8 +676,9 @@ def student_dashboard():
                         as_attachment=True,
                         mimetype='application/pdf'
                     )
+
                 except Exception as e:
-                    flash(f"An error occurred: {str(e)}", 500)
+                    print(f"ERROR:    An error occurred: {e}")
                     return redirect(url_for('student_dashboard'))
 
             elif doc_type == 'situatie_scolara':
@@ -653,25 +686,22 @@ def student_dashboard():
                 new_log = Log(
                     user_id=current_user.id,
                     document_type=doc_type,
-                    requested_at=datetime.utcnow(),
-                    served_at=datetime.utcnow()
                 )
 
                 db.session.add(new_log)
                 db.session.commit()
-                return redirect(url_for('student_dashboard'))
 
+                return redirect(url_for('student_dashboard'))
             elif doc_type == 'foaie_matricola':
                 # Create a new log entry
                 new_log = Log(
                     user_id=current_user.id,
                     document_type=doc_type,
-                    requested_at=datetime.utcnow(),
-                    served_at=datetime.utcnow()
                 )
 
                 db.session.add(new_log)
                 db.session.commit()
+
                 return redirect(url_for('student_dashboard'))
 
         if 'submit_question' in request.form:
@@ -690,7 +720,7 @@ def student_dashboard():
 
             db.session.add(question_entry)
             db.session.commit()
-            print(f"YOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO    Question added    YOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO")
+
             return redirect(url_for('student_dashboard'))
 
     all_questions = Question.query.filter_by(student_id = current_user.student_info.id)\
@@ -730,6 +760,7 @@ def login():
 def logout():
     logout_user()
     return redirect(url_for('home'))
+
 # Driver code
 if __name__ in "__main__":
     with app.app_context():

@@ -83,14 +83,14 @@
     <!-- Requests -->
     <div class="card">
         <h1>Answer Questions</h1>
-        <form action="/employee_dashboard" method="post">
+        <form action="/employee-dashboard" method="post">
             <label for="question_id">Question ID:</label>
-            <input type="number" name="question_id" value="12"><br>
+            <input type="number" name="question_id"><br>
 
             <label for="employee_answer">Your Answer:</label><br>
             <textarea id="employee_answer" name="employee_answer" rows="5" cols="40" class="textarea"></textarea><br>
 
-            <input type="submit" class="good_btn" value="Submit Answer">
+            <input type="submit" class="good_btn" name="submit_answer" value="Submit Answer">
         </form>
 
         <hr class="employee_hr">
