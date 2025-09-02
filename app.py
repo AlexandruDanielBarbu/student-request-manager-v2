@@ -1,15 +1,15 @@
 # Imports
-import os
+import os, io, random, string
 import csv
-import io
 import datetime
+import jinja2, pdfkit
 
 from dotenv           import load_dotenv
 from google           import genai
 from datetime         import datetime, timezone
 from io               import StringIO
 
-from flask            import Flask, render_template, session, redirect, url_for, request, flash, send_file
+from flask            import Flask, render_template, session, redirect, url_for, request, flash, send_file, send_from_directory
 from flask_scss       import Scss
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate    import Migrate
@@ -625,40 +625,34 @@ def student_dashboard():
                     start_year   = current_user.student_info.start_year
                     end_year     = current_user.student_info.graduation_year
                     reason       = request.form.get('reason')
+                    today        = datetime.today().strftime('%d %b %Y')
 
-                    # Hold the PDF data in a buffer
-                    buffer = io.BytesIO()
+                    context = {
+                        'STUD_NAME':    student_name,
+                        'STUD_FACULTY': faculty,
+                        'STUD_DOMAIN':  domain,
+                        'STUD_START':   start_year,
+                        'STUD_END':     end_year,
+                        'STUD_REASON':  reason,
+                        'TODAY':        today
+                    }
 
-                    # Create a document template
-                    doc = SimpleDocTemplate(buffer, pagesize=A4)
-                    styles = getSampleStyleSheet()
-                    story = []
+                    template_loader = jinja2.FileSystemLoader('./static/pdf_templates')
+                    template_env = jinja2.Environment(loader=template_loader)
 
-                    # Add the header as a Paragraph
-                    title = Paragraph("ADEVERINTA DE STUDENT", styles['Heading1'])
-                    story.append(title)
-                    story.append(Spacer(1, 12)) # This adds a vertical space of 12 points
+                    template = template_env.get_template('adeverinta_student.html')
+                    output_text = template.render(context)
 
-                    # Create the main body text using the Paragraph class
-                    body_text_1 = f"Prezenta se elibereaza domnului/doamnei student(a) {student_name}" +\
-                                f"la facultatea {faculty}, specializarea {domain}, " +\
-                                f"promotie {start_year} - {end_year} pentru a-i servi la: {reason}."
-                    body_text_2 = "Va multumim pentru intelegere!"
+                    config = pdfkit.configuration(wkhtmltopdf='/usr/bin/wkhtmltopdf')
 
-                    # Create Paragraphs for each line of text. The Paragraph class handles wrapping.
-                    p1 = Paragraph(body_text_1, styles['Normal'])
-                    story.append(p1)
-                    story.append(Spacer(1, 12)) # Adds a vertical space
-
-                    p2 = Paragraph(body_text_2, styles['Normal'])
-                    story.append(p2)
-                    story.append(Spacer(1, 12)) # Adds a vertical space
-
-                    # Build the document
-                    doc.build(story)
-
-                    # Move the buffer's cursor to the beginning
-                    buffer.seek(0)
+                    # Generate a random string of 10 characters to hide the pdf from path traversal
+                    random_seed = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.ascii_lowercase + string.digits) for _ in range(10))
+                    pdf_name = f'adeverinta_student_{random_seed}.pdf'
+                    pdfkit.from_string(
+                        output_text,
+                        './static/user_genearated_pdfs/' + pdf_name,
+                        configuration=config,
+                        css='./static/pdf_templates_styles/style.css')
 
                     # Create a new log entry
                     new_log = Log(
@@ -670,11 +664,10 @@ def student_dashboard():
                     db.session.commit()
 
                     # Serve the generated PDF to the user
-                    return send_file(
-                        buffer,
-                        download_name='Adeverinta_Student.pdf',
-                        as_attachment=True,
-                        mimetype='application/pdf'
+                    return send_from_directory(
+                        './static/user_genearated_pdfs',
+                        pdf_name,
+                        as_attachment=True
                     )
 
                 except Exception as e:
@@ -705,12 +698,16 @@ def student_dashboard():
                 return redirect(url_for('student_dashboard'))
 
         if 'submit_question' in request.form:
+            # Get user question
             question_text = request.form.get('question')
+
+            # Ask gemini
             response = client.models.generate_content(
                 model="gemini-2.0-flash",
                 contents=f"{question_text}"
             )
 
+            # Save Question
             question_entry = Question(
                 student_id      = current_user.student_info.id,
                 employee_id     = current_user.student_info.responsible_employee_id,

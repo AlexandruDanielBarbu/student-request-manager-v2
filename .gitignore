@@ -3,3 +3,4 @@ env/
 .env
 instance/
 migrations/
+static/user_genearated_pdfs/
